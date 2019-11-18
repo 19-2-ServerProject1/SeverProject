@@ -1,0 +1,13 @@
+client/.vs
+client/simplegame/x64
+*.exe
+*.ilk
+*.pdb
+*.obj
+*.log
+*.pch
+*.idb
+*.tlog
+*.lastbuildstate
+*.suo
+*.db
