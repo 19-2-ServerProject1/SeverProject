@@ -3,21 +3,19 @@
 #include "Object.h"
 #include "Config.h"
 #include <random>
-#include "Vector2d.h"
 
 class ScnMgr
 {
 private :
-	int m_Width = 500;
-	int m_Height = 500;
+	int m_Width = WINDOW_WIDTH;
+	int m_Height = WINDOW_HEIGHT;
 
 	int soc;
 
 	Renderer *m_Renderer = NULL;
+	Object* m_background = NULL;
 	Object* m_ObjList[MAX_OBJECTS];
-
-	int m_TestIdx;
-	int m_TestIdxArray[MAX_OBJECTS];
+	int textures[3];
 
 	//Key Inputs
 	bool m_keyW = false;
@@ -53,6 +51,6 @@ public:
 	void MouseMotion(int x, int y);
 
 	// Objects
-	int AddObject(float x, float y, float z, float sx, float sy, float sz, float r, float g, float b, float a, float vx, float vy, float vz, float mass, float fricCoef, int type);
+	int AddObject(Vector2d pos, Vector2d vol, Vector2d vel, float r, float g, float b, float a, float mass, float fricCoef, int type);
 	void DeleteObject(int idx);
 };
