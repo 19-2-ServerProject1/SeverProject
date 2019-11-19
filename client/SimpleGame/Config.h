@@ -1,7 +1,7 @@
 #pragma once
 
-#define WINDOW_WIDTH  500
-#define WINDOW_HEIGHT 500
+#define WINDOW_WIDTH  800
+#define WINDOW_HEIGHT 600
 
 #define MAX_OBJECTS 100
 
