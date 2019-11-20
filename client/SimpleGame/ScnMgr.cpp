@@ -14,9 +14,6 @@ ScnMgr::ScnMgr(int socket)
 		std::cout << "Renderer could not be initialized.. \n";
 	}
 
-	for (int i = 0; i < MAX_OBJECTS; ++i)
-		m_ObjList[i] = NULL;
-
 	m_players[HERO_ID] = Player();
 
 	//Add Hero Object
@@ -75,28 +72,10 @@ void ScnMgr::Update(float fTimeElapsed)
 
 	//Shoot Bullet
 	if (m_mouseLeft == true && m_players[HERO_ID].CanShootBullet()) {
-		float fAmountBullet = 8.0f;
-		Vector2d bulletDir = m_mousepos / 100;
-		bulletDir -= m_players[HERO_ID].m_pos;
-		bulletDir.normalize();
-		
-		Vector2d hVel = m_players[HERO_ID].m_vel + bulletDir * fAmountBullet;
-		
-		Vector2d vol(0.05f, 0.05f);
-		float mass = 1.0f;
-		float fricCoef = 0.9f;
-		int type = TYPE_BULLET;
-
-		AddObject(m_players[HERO_ID].m_pos, vol, hVel, 1, 0, 0, 1, mass, fricCoef, type);
-		m_players[HERO_ID].ResetShootBulletCoolTime();
+		m_players[HERO_ID].ShootBullet(m_mousepos);
 	}
 
 	m_players[HERO_ID].Update(fTimeElapsed);
-	for (Object *&o : m_ObjList)
-	{
-		if (o == NULL) continue;
-		o->Update(fTimeElapsed);
-	}
 
 	DoGarbageCollection();
 }
@@ -107,14 +86,12 @@ void ScnMgr::RenderScene()
 
 	m_Renderer->DrawTextureRect(m_background->m_pos.x * 100, m_background->m_pos.y * 100, 0, m_background->m_vol.x * 100, m_background->m_vol.y * 100, 0, m_background->m_color[0], m_background->m_color[1], m_background->m_color[2], m_background->m_color[3], m_background->m_texID);
 
-	for (Object *&o : m_ObjList)
-	{
-		if (o == NULL) continue;
-		m_Renderer->DrawTextureRect(o->m_pos.x*100, o->m_pos.y*100, 0, o->m_vol.x*100, o->m_vol.y*100, 0, o->m_color[0], o->m_color[1], o->m_color[2], o->m_color[3], o->m_texID);
-	}
-
 	for (auto &p : m_players) {
-		auto o = p.second;
+		auto& o = p.second;
+		for (auto& b : o.bullets)
+		{
+			m_Renderer->DrawTextureRect(b.m_pos.x * 100, b.m_pos.y * 100, 0, b.m_vol.x * 100, b.m_vol.y * 100, 0, b.m_color[0], b.m_color[1], b.m_color[2], b.m_color[3], b.m_texID);
+		}
 		m_Renderer->DrawTextureRect(o.m_pos.x * 100, o.m_pos.y * 100, 0, o.m_vol.x * 100, o.m_vol.y * 100, 0, o.m_color[0], o.m_color[1], o.m_color[2], o.m_color[3], o.m_texID);
 	}
 }
@@ -213,65 +190,19 @@ void ScnMgr::MouseMotion(int x, int y)
 	}
 }
 
-int ScnMgr::AddObject(Vector2d pos, Vector2d vol, Vector2d vel, float r, float g, float b, float a, float mass, float fricCoef, int type)
-{
-	int idx = -1;
-	for (int i = 0; i < MAX_OBJECTS; ++i)
-	{
-		if (m_ObjList[i] == NULL)
-		{
-			idx = i;
-			break;
-		}
-	}
-
-	if (idx == -1)
-	{
-		std::cout << "No more remaining object" << std::endl;
-		return idx;
-	}
-
-	m_ObjList[idx] = new Object();
-	m_ObjList[idx]->SetPos(pos);
-	m_ObjList[idx]->SetColor(r, g, b, a);
-	m_ObjList[idx]->SetVol(vol);
-	m_ObjList[idx]->SetVel(vel);
-	m_ObjList[idx]->SetMass(mass);
-	m_ObjList[idx]->SetFriction(fricCoef);
-	m_ObjList[idx]->SetType(type);
-
-	return idx;
-}
-void ScnMgr::DeleteObject(int idx)
-{
-	if (idx < 0)
-	{
-		std::cout << "unvalid Index - " << idx << std::endl;
-		return;
-	}
-	if (idx >= MAX_OBJECTS)
-	{
-		std::cout << "unvalid Index - " << idx << std::endl;
-		return;
-	}
-	if (m_ObjList[idx] != NULL)
-	{
-		delete m_ObjList[idx];
-		m_ObjList[idx] = NULL;
-	}
-}
-
 void ScnMgr::DoGarbageCollection()
 {
 	//delete bullets
-	for (int i = 0; i < MAX_OBJECTS; ++i)
+	for (auto& p_pair : m_players)
 	{
-		if (m_ObjList[i] == NULL) continue;
-		int Type = m_ObjList[i]->m_type;
-		if (Type == TYPE_BULLET)
+		auto& player = p_pair.second;
+		if (player.m_visible == false) continue;
+
+		for (auto& b : player.bullets)
 		{
-			if (m_ObjList[i]->m_vel.length() < 0.00001f) DeleteObject(i);
-			continue;
+			if (b.m_visible == false) continue;
+			if (b.m_vel.length() < 0.00001f)
+				b.m_visible = false;
 		}
 	}
 }
