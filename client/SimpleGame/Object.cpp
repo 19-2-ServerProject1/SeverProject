@@ -93,6 +93,8 @@ void Object::SetTex(int tex)
 ///////////////////////////////////////////////////////////////////////////////////////
 void Object::Update(float fTimeElapsed)
 {
+	if (m_visible == false) return;
+
 	// Apply Friction
 	float velSize = m_vel.length();
 	if (velSize > 0.0f)
@@ -135,6 +137,7 @@ void Object::AddForce(Vector2d force, float fElapsedTime)
 //Player
 Player::Player() : Object()
 {
+	m_visible = true;
 	weapon = 0;
 	m_remainingBulletCoolTime = m_defaultBulletCoolTime[weapon];
 }
@@ -144,7 +147,10 @@ void Player::Update(float fTimeElapsed)
 {
 	// Reduce Bullet Cooltime
 	m_remainingBulletCoolTime -= fTimeElapsed;
+
 	Object::Update(fTimeElapsed);
+	for (int i = 0; i < MAX_BULLET; ++i)
+		bullets[i].Update(fTimeElapsed);
 }
 
 bool Player::CanShootBullet()
@@ -162,7 +168,7 @@ int Player::AddBullet(Vector2d pos, Vector2d vol, Vector2d vel, float r, float g
 	int idx = -1;
 	for (int i = 0; i < MAX_BULLET; ++i)
 	{
-		if (bullets[i].m_visible == true)
+		if (bullets[i].m_visible == false)
 		{
 			idx = i;
 			break;
@@ -200,10 +206,6 @@ void Player::ShootBullet(Vector2d MousePos)
 		fricCoef = 0.9f;
 		break;
 	}
-
-	float fAmountBullet = 8.0f;
-	float mass = 1.0f;
-	float fricCoef = 0.9f;
 
 	Vector2d bulletDir = MousePos / 100;
 	bulletDir -= m_pos;
