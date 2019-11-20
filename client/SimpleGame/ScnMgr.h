@@ -3,6 +3,7 @@
 #include "Object.h"
 #include "Config.h"
 #include <random>
+#include <map>
 
 class ScnMgr
 {
@@ -14,6 +15,7 @@ private :
 
 	Renderer *m_Renderer = NULL;
 	Object* m_background = NULL;
+	map<int, Player> m_players;
 	Object* m_ObjList[MAX_OBJECTS];
 	int textures[3];
 

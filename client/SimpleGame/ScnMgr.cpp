@@ -17,23 +17,26 @@ ScnMgr::ScnMgr(int socket)
 	for (int i = 0; i < MAX_OBJECTS; ++i)
 		m_ObjList[i] = NULL;
 
-	//Add Hero Object
-	m_ObjList[HERO_ID] = new Object();
-	m_ObjList[HERO_ID]->SetPos(0.0f, 0.0f);
-	m_ObjList[HERO_ID]->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
-	m_ObjList[HERO_ID]->SetVol(0.5f, 0.5f);
-	m_ObjList[HERO_ID]->SetVel(0.0f, 0.0f);
-	m_ObjList[HERO_ID]->SetMass(1.0f);
-	m_ObjList[HERO_ID]->SetFriction(0.6f);
+	m_players[HERO_ID] = Player();
 
+	//Add Hero Object
+	m_players[HERO_ID].SetPos(0.0f, 0.0f);
+	m_players[HERO_ID].SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+	m_players[HERO_ID].SetVol(0.5f, 0.5f);
+	m_players[HERO_ID].SetVel(0.0f, 0.0f);
+	m_players[HERO_ID].SetMass(1.0f);
+	m_players[HERO_ID].SetFriction(0.6f);
+
+	//Add Background
 	m_background = new Object();
 	m_background->SetPos(0, 0);
 	m_background->SetVol(m_Width / 100, m_Height / 100);
 
 	textures[0] = m_Renderer->GenPngTexture("./Textures/bg.png");
 	textures[1] = m_Renderer->GenPngTexture("./Textures/player.png");
+	textures[2] = m_Renderer->GenPngTexture("./Textures/block.png");
 	m_background->SetTex(textures[0]);
-	m_ObjList[HERO_ID]->SetTex(textures[1]);
+	m_players[HERO_ID].SetTex(textures[1]);
 }
 ScnMgr::~ScnMgr()
 {
@@ -44,6 +47,7 @@ ScnMgr::~ScnMgr()
 
 void ScnMgr::Update(float fTimeElapsed)
 {
+	//Move Player
 	Vector2d keyDir(0, 0);
 	if (m_keyW)
 	{
@@ -66,26 +70,28 @@ void ScnMgr::Update(float fTimeElapsed)
 		float fAmount = 10.0f;
 		keyDir.normalize();
 		keyDir *= fAmount;
-		m_ObjList[HERO_ID]->AddForce(keyDir, fTimeElapsed);
+		m_players[HERO_ID].AddForce(keyDir, fTimeElapsed);
 	}
 
-	if (m_mouseLeft == true && m_ObjList[HERO_ID]->CanShootBullet()) {
+	//Shoot Bullet
+	if (m_mouseLeft == true && m_players[HERO_ID].CanShootBullet()) {
 		float fAmountBullet = 8.0f;
 		Vector2d bulletDir = m_mousepos / 100;
-		bulletDir -= m_ObjList[HERO_ID]->m_pos;
+		bulletDir -= m_players[HERO_ID].m_pos;
 		bulletDir.normalize();
 		
-		Vector2d hVel = m_ObjList[HERO_ID]->m_vel + bulletDir * fAmountBullet;
+		Vector2d hVel = m_players[HERO_ID].m_vel + bulletDir * fAmountBullet;
 		
 		Vector2d vol(0.05f, 0.05f);
 		float mass = 1.0f;
 		float fricCoef = 0.9f;
 		int type = TYPE_BULLET;
 
-		AddObject(m_ObjList[HERO_ID]->m_pos, vol, hVel, 1, 0, 0, 1, mass, fricCoef, type);
-		m_ObjList[HERO_ID]->ResetShootBulletCoolTime();
+		AddObject(m_players[HERO_ID].m_pos, vol, hVel, 1, 0, 0, 1, mass, fricCoef, type);
+		m_players[HERO_ID].ResetShootBulletCoolTime();
 	}
 
+	m_players[HERO_ID].Update(fTimeElapsed);
 	for (Object *&o : m_ObjList)
 	{
 		if (o == NULL) continue;
@@ -104,8 +110,12 @@ void ScnMgr::RenderScene()
 	for (Object *&o : m_ObjList)
 	{
 		if (o == NULL) continue;
-		//m_Renderer->DrawSolidRect(x, y, z, sx, r, g, b, a);
 		m_Renderer->DrawTextureRect(o->m_pos.x*100, o->m_pos.y*100, 0, o->m_vol.x*100, o->m_vol.y*100, 0, o->m_color[0], o->m_color[1], o->m_color[2], o->m_color[3], o->m_texID);
+	}
+
+	for (auto &p : m_players) {
+		auto o = p.second;
+		m_Renderer->DrawTextureRect(o.m_pos.x * 100, o.m_pos.y * 100, 0, o.m_vol.x * 100, o.m_vol.y * 100, 0, o.m_color[0], o.m_color[1], o.m_color[2], o.m_color[3], o.m_texID);
 	}
 }
 
