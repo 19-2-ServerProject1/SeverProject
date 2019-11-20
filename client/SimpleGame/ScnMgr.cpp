@@ -77,6 +77,21 @@ void ScnMgr::Update(float fTimeElapsed)
 
 	m_players[HERO_ID].Update(fTimeElapsed);
 
+	//Collision Detect
+	for (auto& p_pair : m_players)
+	{
+		auto& player = p_pair.second;
+		for (auto & bullet : player.bullets)
+		{
+			if (bullet.m_visible == false) continue;
+			for (auto& p_pair : m_players)
+			{
+				if (p_pair.second.isOverlap(bullet))
+					cout << "Collision" << endl;
+			}
+		}
+	}
+
 	DoGarbageCollection();
 }
 void ScnMgr::RenderScene()
@@ -90,6 +105,7 @@ void ScnMgr::RenderScene()
 		auto& o = p.second;
 		for (auto& b : o.bullets)
 		{
+			if (b.m_visible == false) continue;
 			m_Renderer->DrawTextureRect(b.m_pos.x * 100, b.m_pos.y * 100, 0, b.m_vol.x * 100, b.m_vol.y * 100, 0, b.m_color[0], b.m_color[1], b.m_color[2], b.m_color[3], b.m_texID);
 		}
 		m_Renderer->DrawTextureRect(o.m_pos.x * 100, o.m_pos.y * 100, 0, o.m_vol.x * 100, o.m_vol.y * 100, 0, o.m_color[0], o.m_color[1], o.m_color[2], o.m_color[3], o.m_texID);

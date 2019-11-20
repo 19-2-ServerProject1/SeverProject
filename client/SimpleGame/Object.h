@@ -36,6 +36,9 @@ public:
 	//Update
 	void Update(float fTimeElapsed);
 	void AddForce(Vector2d force, float fElapsedTime);
+
+	//collision
+	bool isOverlap(const Object& other);
 };
 
 class Bullet : public Object
