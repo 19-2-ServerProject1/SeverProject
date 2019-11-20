@@ -134,6 +134,25 @@ void Object::AddForce(Vector2d force, float fElapsedTime)
 	m_vel += acc * fElapsedTime;
 }
 
+bool Object::isOverlap(const Object & other)
+{
+	float aMinX, aMaxX, aMinY, aMaxY;
+	aMinX = m_pos.x - m_vol.x / 2.0f; aMaxX = m_pos.x + m_vol.x / 2.0f;
+	aMinY = m_pos.y - m_vol.y / 2.0f; aMaxY = m_pos.y + m_vol.y / 2.0f;
+
+	float bMinX, bMaxX, bMinY, bMaxY;
+	bMinX = other.m_pos.x - other.m_vol.x / 2.0f; bMaxX = other.m_pos.x + other.m_vol.x / 2.0f;
+	bMinY = other.m_pos.y - other.m_vol.y / 2.0f; bMaxY = other.m_pos.y + other.m_vol.y / 2.0f;
+
+	if (aMinX > bMaxX) return false;
+	if (aMaxX < bMinX) return false;
+
+	if (aMinY > bMaxY) return false;
+	if (aMaxY < bMinY) return false;
+
+	return true;
+}
+
 //Player
 Player::Player() : Object()
 {
