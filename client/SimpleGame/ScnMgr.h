@@ -16,7 +16,6 @@ private :
 	Renderer *m_Renderer = NULL;
 	Object* m_background = NULL;
 	map<int, Player> m_players;
-	Object* m_ObjList[MAX_OBJECTS];
 	int textures[3];
 
 	//Key Inputs

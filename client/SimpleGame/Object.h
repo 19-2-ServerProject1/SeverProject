@@ -41,6 +41,9 @@ public:
 class Bullet : public Object
 {
 public:
+	Bullet() : Object() {};
+	~Bullet(){};
+
 	int type;
 	int damage;
 };
@@ -48,12 +51,16 @@ public:
 class Player : public Object
 {
 private:
-	int weapon = 0;
 	float m_remainingBulletCoolTime = 0.0f;
 	float m_defaultBulletCoolTime[3] = { 0.4f, 0.3f, 0.5f };
-	Bullet bullets[100];
 
 public:
+	int weapon = 0;
+	Bullet bullets[100];
+
+	bool m_key[4];
+	bool m_mouse;
+
 	Player();
 	~Player();
 	void Update(float fTimeElapsed);
