@@ -3,12 +3,9 @@
 
 class Object
 {
-private:
-
-	float m_remainingBulletCoolTime = 0.0f;
-	float m_defaultBulletCoolTime = 0.2f;
-
 public:
+	bool m_visible;
+
 	int m_type;
 	Vector2d m_pos;
 	Vector2d m_vel;
@@ -38,9 +35,30 @@ public:
 
 	//Update
 	void Update(float fTimeElapsed);
-
 	void AddForce(Vector2d force, float fElapsedTime);
+};
 
+class Bullet : public Object
+{
+public:
+	int type;
+	int damage;
+};
+
+class Player : public Object
+{
+private:
+	int weapon = 0;
+	float m_remainingBulletCoolTime = 0.0f;
+	float m_defaultBulletCoolTime[3] = { 0.4f, 0.3f, 0.5f };
+	Bullet bullets[100];
+
+public:
+	Player();
+	~Player();
+	void Update(float fTimeElapsed);
 	bool CanShootBullet();
 	void ResetShootBulletCoolTime();
+	int AddBullet(Vector2d pos, Vector2d vol, Vector2d vel, float r, float g, float b, float a, float mass, float fricCoef);
+	void ShootBullet(Vector2d MousePos);
 };

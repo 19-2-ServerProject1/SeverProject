@@ -7,8 +7,8 @@
 
 Object::Object()
 {
+	m_visible = false;
 	InitPhysics();
-	m_remainingBulletCoolTime = m_defaultBulletCoolTime;
 }
 Object::~Object()
 {
@@ -93,9 +93,6 @@ void Object::SetTex(int tex)
 ///////////////////////////////////////////////////////////////////////////////////////
 void Object::Update(float fTimeElapsed)
 {
-	// Reduce Bullet Cooltime
-	m_remainingBulletCoolTime -= fTimeElapsed;
-
 	// Apply Friction
 	float velSize = m_vel.length();
 	if (velSize > 0.0f)
@@ -127,7 +124,6 @@ void Object::Update(float fTimeElapsed)
 			m_vel.y = newVel.y;
 		}
 	}
-
 	m_pos += m_vel * fTimeElapsed;
 }
 void Object::AddForce(Vector2d force, float fElapsedTime)
@@ -136,12 +132,86 @@ void Object::AddForce(Vector2d force, float fElapsedTime)
 	m_vel += acc * fElapsedTime;
 }
 
-bool Object::CanShootBullet()
+//Player
+Player::Player() : Object()
+{
+	weapon = 0;
+	m_remainingBulletCoolTime = m_defaultBulletCoolTime[weapon];
+}
+Player::~Player() {};
+
+void Player::Update(float fTimeElapsed)
+{
+	// Reduce Bullet Cooltime
+	m_remainingBulletCoolTime -= fTimeElapsed;
+	Object::Update(fTimeElapsed);
+}
+
+bool Player::CanShootBullet()
 {
 	return m_remainingBulletCoolTime <= 0.0000001f;
 }
 
-void Object::ResetShootBulletCoolTime()
+void Player::ResetShootBulletCoolTime()
 {
-	m_remainingBulletCoolTime = m_defaultBulletCoolTime;
+	m_remainingBulletCoolTime = m_defaultBulletCoolTime[weapon];
+}
+
+int Player::AddBullet(Vector2d pos, Vector2d vol, Vector2d vel, float r, float g, float b, float a, float mass, float fricCoef)
+{
+	int idx = -1;
+	for (int i = 0; i < MAX_BULLET; ++i)
+	{
+		if (bullets[i].m_visible == true)
+		{
+			idx = i;
+			break;
+		}
+	}
+
+	if (idx == -1)
+	{
+		std::cout << "No more remaining object" << std::endl;
+		return idx;
+	}
+
+	bullets[idx].m_visible = true;
+	bullets[idx].SetPos(pos);
+	bullets[idx].SetColor(r, g, b, a);
+	bullets[idx].SetVol(vol);
+	bullets[idx].SetVel(vel);
+	bullets[idx].SetMass(mass);
+	bullets[idx].SetFriction(fricCoef);
+
+	return idx;
+}
+
+void Player::ShootBullet(Vector2d MousePos)
+{
+	if (CanShootBullet() == false) return;
+
+	float fAmountBullet, mass, fricCoef;
+
+	switch (weapon)
+	{
+	case 0:
+		fAmountBullet = 8.0f;
+		mass = 1.0f;
+		fricCoef = 0.9f;
+		break;
+	}
+
+	float fAmountBullet = 8.0f;
+	float mass = 1.0f;
+	float fricCoef = 0.9f;
+
+	Vector2d bulletDir = MousePos / 100;
+	bulletDir -= m_pos;
+	bulletDir.normalize();
+	Vector2d hVel = m_vel + bulletDir * fAmountBullet;
+	Vector2d vol(0.05f, 0.05f);
+
+	AddBullet(m_pos, vol, hVel, 1, 0, 0, 1, mass, fricCoef);
+
+	ResetShootBulletCoolTime();
 }
