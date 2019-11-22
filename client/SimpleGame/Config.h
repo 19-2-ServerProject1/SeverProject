@@ -4,7 +4,7 @@
 #define WINDOW_HEIGHT 600
 
 #define MAX_OBJECTS 100
-#define MAX_BULLET 100
+#define MAX_BULLET 30
 
 #define HERO_ID 0
 
