@@ -5,11 +5,28 @@ bool On(const int& p_iflag, int pt) { return (p_iflag & pt) == pt; }
 void pTurnOn(int& p_iflag, const int pt) { p_iflag |= pt; }
 void pTurnOff(int& p_iflag, const int pt) { if (On(p_iflag, pt))   p_iflag ^= pt; }
 
-int make_packet_input(const int& id, int key) {
+int make_packet_input(const int& client, int key) {
 	int packet = 0;
 	pTurnOn(packet, p_input);
-	pTurnOn(packet, id);
+	pTurnOn(packet, client);
 	pTurnOn(packet, key);
+	return packet;
+}
+int make_packet_destroy_bullet(const int& client, int idx) {
+	int packet = 0;
+	pTurnOn(packet, p_obj);
+	pTurnOn(packet, obj_bullet);
+	pTurnOn(packet, obj_destroy);
+	pTurnOn(packet, client);
+	pTurnOn(packet, idx);
+	return packet;
+}
+int make_packet_destroy_item(int idx) {
+	int packet = 0;
+	pTurnOn(packet, p_obj);
+	pTurnOn(packet, obj_item);
+	pTurnOn(packet, obj_destroy);
+	pTurnOn(packet, idx);
 	return packet;
 }
 int get_packet_type(const int& packet) {
@@ -26,6 +43,15 @@ int get_packet_player_num(const int& packet) {
 }
 int get_packet_input(const int& packet) {
 	return packet & 0x0000FFFF;
+}
+int get_packet_bullet_type(const int& packet) {
+	int type = packet >> 24;
+	return type & 0x000000FF;
+}
+
+int get_packet_bullet_idx(const int& packet)
+{
+	return packet & 0x000000FF;
 }
 
 int get_player_num(const int& num)
