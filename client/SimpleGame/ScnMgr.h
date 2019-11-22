@@ -16,8 +16,10 @@ private :
 	Renderer *m_Renderer = NULL;
 	Object* m_background = NULL;
 	Object* m_wall[4];
+	Item* m_item[4];
 	map<int, Player> m_players;
-	int textures[3];
+	int textures[4];
+	int bullettextures[3];
 
 	//Key Inputs
 	bool m_keyW = false;

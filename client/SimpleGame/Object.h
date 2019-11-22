@@ -67,7 +67,14 @@ public:
 	~Bullet(){};
 
 	int type;
-	int damage;
+};
+
+class Item : public Object
+{
+public:
+	Item() : Object() { type = rand()%3; };
+	~Item() {};
+	int type;
 };
 
 class Player : public Object
@@ -75,8 +82,10 @@ class Player : public Object
 private:
 	float m_remainingBulletCoolTime = 0.0f;
 	float m_defaultBulletCoolTime[3] = { 0.4f, 0.3f, 0.5f };
+	int m_damage[3] = { 30, 20, 50 };
 
 public:
+	int m_hp = 100;
 	int weapon = 0;
 	Bullet bullets[100];
 
@@ -90,4 +99,14 @@ public:
 	void ResetShootBulletCoolTime();
 	int AddBullet(Vector2d pos, Vector2d vol, Vector2d vel, float r, float g, float b, float a, float mass, float fricCoef);
 	void ShootBullet(Vector2d MousePos);
+	bool getDamage(const Bullet& bullet)
+	{
+		m_hp -= m_damage[bullet.type];
+		return m_hp <= 0;
+	}
+	void die() {
+		m_visible = false;
+		for (auto& b : bullets)
+			b.m_visible = false;
+	}
 };
