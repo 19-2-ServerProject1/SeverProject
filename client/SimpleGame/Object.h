@@ -66,7 +66,7 @@ public:
 	Bullet() : Object() {};
 	~Bullet(){};
 
-	int type;
+	int type = 0;
 };
 
 class Item : public Object

@@ -29,8 +29,6 @@ enum packet_obj_type {
 	obj_bullet = 0x00002000,
 	obj_item = 0x00004000,
 
-
-
 	//obj_create = 0x000100,
 	//obj_id		= 0x0000??
 };
@@ -52,11 +50,16 @@ bool On(const int& p_iflag, int pt);
 void pTurnOn(int& p_iflag, const int pt);
 void pTurnOff(int& p_iflag, const int pt);
 
-int make_packet_input(const int& id, int key);
+int make_packet_input(const int& client, int key);
+int make_packet_destroy_bullet(const int& client, int idx);
+int make_packet_destroy_item(int idx);
 int get_packet_type(const int& packet);
 int get_packet_obj_info(const int& packet);
 int get_packet_obj_type(const int& packet);
 int get_packet_player_num(const int& packet);
 int get_packet_input(const int& packet);
+int get_packet_bullet_idx(const int& packet);
+int get_packet_bullet_type(const int& packet);
 
 int get_player_num(const int& num);
+

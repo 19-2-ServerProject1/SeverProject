@@ -4,6 +4,7 @@
 #include <thread>
 #include <mutex>
 #include <queue>
+#include <list>
 #include "Timer.h"
 using namespace std;
 
@@ -30,21 +31,64 @@ vector<thread> threads;
 mutex RecvLock;
 queue<int> RecvQueue;
 queue<Vector2d> RecvAddData;
-queue<int> SendQueue;
-queue<Vector2d> SendAddData;
+list<int> SendQueue;
+list<Vector2d> SendAddData;
 
 //Scene Value
 int m_Width = WINDOW_WIDTH;
 int m_Height = WINDOW_HEIGHT;
 Object* m_background = NULL;
 Object* m_wall[4];
-Item* m_item[4];
+Item* m_item[MAX_ITEM];
 map<int, Player> PlayerList;
 
 //Error Handler
 void err_quit(const char* msg);
 void err_display(const char* msg);
 
+//SendPacket
+void send_packet_player_id(SOCKET client, const int& playernum)
+{
+	int packet = 0;
+	switch (playernum) {
+	case 1:
+		pTurnOn(packet, player1);
+		break;
+	case 2:
+		pTurnOn(packet, player2);
+		break;
+	case 3:
+		pTurnOn(packet, player3);
+		break;
+	}
+	send(client, (const char*)& packet, sizeof(int), 0);
+}
+void send_packet_player_pos(const Player& client, const Player& mover)
+{
+	int packet = 0;
+	pTurnOn(packet, p_obj);
+	pTurnOn(packet, mover.m_id);
+	pTurnOn(packet, obj_player);
+	pTurnOn(packet, obj_position);
+	
+	send(client.m_socket, (const char*)&packet, sizeof(int), 0);
+	send(client.m_socket, (const char*)&mover.m_pos, sizeof(Vector2d), 0);
+}
+void send_packet_bullet_pos(const Player& client, const Player& shooter, const int& idx)
+{
+	int packet = 0;
+	int bullet_type = shooter.bullets[idx].type << 24;
+
+	pTurnOn(packet, p_obj);
+	pTurnOn(packet, shooter.m_id);
+	pTurnOn(packet, idx);
+	pTurnOn(packet, bullet_type);
+	pTurnOn(packet, obj_bullet);
+	pTurnOn(packet, obj_position);
+
+	send(client.m_socket, (const char*)& packet, sizeof(int), 0);
+	send(client.m_socket, (const char*)& shooter.bullets[idx].m_pos, sizeof(Vector2d), 0);
+}
 //Message Process
 void ProcessInputPacket(const int& packet, queue<Vector2d>& addData) {
 	int sender = get_packet_player_num(packet);
@@ -153,7 +197,7 @@ void ProcessPacket() {
 			break;
 
 		case p_input:
-			ProcessInputPacket(packet);
+			ProcessInputPacket(packet, cAddData);
 			break;
 
 		case p_obj:
@@ -165,33 +209,25 @@ void ProcessPacket() {
 	}
 }
 void SendGameState() {
-	for (auto& player : PlayerList) {
-		int packet = 0;
-		pTurnOn(packet, p_obj);
-		pTurnOn(packet, obj_player);
-		pTurnOn(packet, obj_position);
-		packet |= player.first;
-		send(player.second.m_socket, (const char*)& packet, sizeof(int), 0);
-		send(player.second.m_socket, (const char*)& player.second.m_pos, sizeof(Vector2d), 0);
-	}
-} 
+	for (auto& p_player : PlayerList) {
+		auto& player = p_player.second;
 
-//SendPacket
-void send_packet_player_id(SOCKET client, const int& playernum)
-{
-	int packet = 0;
-	switch (playernum) {
-	case 1:
-		pTurnOn(packet, player1);
-		break;
-	case 2:
-		pTurnOn(packet, player2);
-		break;
-	case 3:
-		pTurnOn(packet, player3);
-		break;
+		if (SendQueue.empty() == false)
+		{
+			for (auto beg = SendQueue.begin(); beg != SendQueue.end(); ++beg)
+				send(player.m_socket, (const char*) & *beg, sizeof(int), 0);
+		}
+
+		for (auto& p_other_player : PlayerList)
+		{
+			auto& other_player = p_other_player.second;
+			send_packet_player_pos(player, other_player);
+			for (int i = 0; i < MAX_BULLET; ++i)
+				if (other_player.bullets[i].m_visible)
+					send_packet_bullet_pos(player, other_player, i);
+		}
 	}
-	send(client, (const char*)& packet, sizeof(int), 0);
+	SendQueue.clear();
 }
 
 //Scene Process
@@ -244,6 +280,7 @@ int main()
 		send_packet_player_id(client_sock, g_curUser);
 		int playernum = get_player_num(g_curUser);
 		PlayerList[playernum] = Player();
+		PlayerList[playernum].m_id = playernum;
 		PlayerList[playernum].m_socket = client_sock;
 		PlayerList[playernum].SetPos(0.0f, 0.0f);
 		PlayerList[playernum].SetColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -375,12 +412,14 @@ void Update(float fTimeElapsed)
 		}
 
 		//플레이어, 아이템 체크
-		for (auto& item : m_item)
+		for (int i=0;i<MAX_ITEM;++i)
 		{
-			if (item->m_visible == false) continue;
-			if (player.isOverlap(*item)) {
-				player.weapon = item->type;
-				item->m_visible = false;
+			if (m_item[i]->m_visible == false) continue;
+			if (player.isOverlap(*m_item[i])) {
+				player.weapon = m_item[i]->type;
+				m_item[i]->m_visible = false;
+				int packet = make_packet_destroy_item(i);
+				SendQueue.emplace_back(packet);
 			}
 		}
 
@@ -412,11 +451,14 @@ void DoGarbageCollection()
 		auto& player = p_pair.second;
 		if (player.m_visible == false) continue;
 
-		for (auto& b : player.bullets)
+		for (int i=0;i<MAX_BULLET;++i)
 		{
-			if (b.m_visible == false) continue;
-			if (b.m_vel.length() < 0.00001f)
-				b.m_visible = false;
+			if (player.bullets[i].m_visible == false) continue;
+			if (player.bullets[i].m_vel.length() < 0.00001f) {
+				player.bullets[i].m_visible = false;
+				int packet = make_packet_destroy_bullet(player.m_id, i);
+				SendQueue.emplace_back(packet);
+			}
 		}
 	}
 }

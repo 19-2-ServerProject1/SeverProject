@@ -71,24 +71,6 @@ ScnMgr::ScnMgr(int socket, int id)
 
 	//Add Hero Object
 	m_players[MYID] = Player();
-	m_players[MYID].SetPos(0.0f, 0.0f);
-	m_players[MYID].SetColor(1.0f, 1.0f, 1.0f, 1.0f);
-	m_players[MYID].SetVol(0.3f, 0.3f);
-	m_players[MYID].SetVel(0.0f, 0.0f);
-	m_players[MYID].SetMass(1.0f);
-	m_players[MYID].SetFriction(0.6f);
-	m_players[MYID].SetTex(textures[1]);
-
-	//Add Test Object
-	m_players[1] = Player();
-	m_players[1].SetPos(2.0f, 0.0f);
-	m_players[1].SetColor(1.0f, 1.0f, 1.0f, 1.0f);
-	m_players[1].SetVol(0.3f, 0.3f);
-	m_players[1].SetVel(0.0f, 0.0f);
-	m_players[1].SetMass(1.0f);
-	m_players[1].SetFriction(0.6f);
-	m_players[1].SetTex(textures[1]);
-
 }
 ScnMgr::~ScnMgr()
 {
@@ -198,9 +180,9 @@ void ScnMgr::RenderScene()
 		for (auto& b : o.bullets)
 		{
 			if (b.m_visible == false) continue;
-			m_Renderer->DrawTextureRect(b.m_pos.x * 100, b.m_pos.y * 100, 0, b.m_vol.x * 100, b.m_vol.y * 100, 0, b.m_color[0], b.m_color[1], b.m_color[2], b.m_color[3], bullettextures[b.type]);
+			m_Renderer->DrawTextureRect(b.m_pos.x * 100, b.m_pos.y * 100, 0, 5, 5, 0, 1, 1, 1, 1, bullettextures[b.type]);
 		}
-		m_Renderer->DrawTextureRect(o.m_pos.x * 100, o.m_pos.y * 100, 0, o.m_vol.x * 100, o.m_vol.y * 100, 0, o.m_color[0], o.m_color[1], o.m_color[2], o.m_color[3], o.m_texID);
+		m_Renderer->DrawTextureRect(o.m_pos.x * 100, o.m_pos.y * 100, 0, o.m_vol.x * 100, o.m_vol.y * 100, 0, o.m_color[0], o.m_color[1], o.m_color[2], o.m_color[3], textures[1]);
 	}
 }
 
@@ -290,6 +272,9 @@ void ScnMgr::MouseInput(int button, int state, int x, int y)
 		if (state == GLUT_DOWN) {
 			m_mouseLeft = true;
 			m_mousepos.x = x; m_mousepos.y = y;
+			int packet = make_packet_input(MYID, input_Mleft);
+			send(soc, (const char*)& packet, sizeof(int), 0);
+			send(soc, (const char*)& m_mousepos, sizeof(Vector2d), 0);
 		}
 		else if (state == GLUT_UP) m_mouseLeft = false;
 	}
