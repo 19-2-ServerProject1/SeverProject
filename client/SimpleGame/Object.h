@@ -39,6 +39,25 @@ public:
 
 	//collision
 	bool isOverlap(const Object& other);
+	void correctpos(const Object& collider) {
+		Vector2d dir = m_pos - collider.m_pos;
+		if (dir.y * dir.y > dir.x * dir.x)
+		{
+			float len = (m_vol.y + collider.m_vol.y) / 2.0f;
+			if (dir.y > 0)
+				m_pos.y = collider.m_pos.y + len;
+			else
+				m_pos.y = collider.m_pos.y - len;
+		}
+		else
+		{
+			float len = (m_vol.x + collider.m_vol.x) / 2.0f;
+			if (dir.x > 0)
+				m_pos.x = collider.m_pos.x + len;
+			else
+				m_pos.x = collider.m_pos.x - len;
+		}
+	}
 };
 
 class Bullet : public Object
