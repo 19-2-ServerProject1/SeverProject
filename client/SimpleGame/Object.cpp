@@ -215,16 +215,7 @@ void Player::ShootBullet(Vector2d MousePos)
 {
 	if (CanShootBullet() == false) return;
 
-	float fAmountBullet, mass, fricCoef;
-
-	switch (weapon)
-	{
-	case 0:
-		fAmountBullet = 8.0f;
-		mass = 1.0f;
-		fricCoef = 0.9f;
-		break;
-	}
+	float fAmountBullet = 8.0f, mass = 1.0f, fricCoef= 0.9f;
 
 	Vector2d bulletDir = MousePos / 100;
 	bulletDir -= m_pos;
@@ -232,7 +223,8 @@ void Player::ShootBullet(Vector2d MousePos)
 	Vector2d hVel = m_vel + bulletDir * fAmountBullet;
 	Vector2d vol(0.05f, 0.05f);
 
-	AddBullet(m_pos, vol, hVel, 1, 0, 0, 1, mass, fricCoef);
+	int idx = AddBullet(m_pos, vol, hVel, 1, 0, 0, 1, mass, fricCoef);
+	bullets[idx].type = weapon;
 
 	ResetShootBulletCoolTime();
 }

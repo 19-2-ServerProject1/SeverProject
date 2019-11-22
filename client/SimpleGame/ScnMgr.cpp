@@ -17,6 +17,11 @@ ScnMgr::ScnMgr(int socket)
 	textures[0] = m_Renderer->GenPngTexture("./Textures/bg.png");
 	textures[1] = m_Renderer->GenPngTexture("./Textures/player.png");
 	textures[2] = m_Renderer->GenPngTexture("./Textures/block.png");
+	textures[3] = m_Renderer->GenPngTexture("./Textures/mushroom.png");
+
+	bullettextures[0] = m_Renderer->GenPngTexture("./Textures/bullet1.png");
+	bullettextures[1] = m_Renderer->GenPngTexture("./Textures/bullet2.png");
+	bullettextures[2] = m_Renderer->GenPngTexture("./Textures/bullet3.png");
 
 	//Add Background
 	m_background = new Object();
@@ -38,11 +43,33 @@ ScnMgr::ScnMgr(int socket)
 	m_wall[3]->SetPos(0, -(m_Width + m_Height) / 200);
 	m_wall[3]->SetVol(m_Width / 100, m_Width / 100);
 
+	//Add Item
+	m_item[0] = new Item();
+	m_item[0]->SetPos(m_Width / 400, m_Height / 400);
+	m_item[0]->SetVol(0.2f, 0.2f);
+	m_item[0]->SetTex(textures[3]);
+	m_item[0]->m_visible = true;
+	m_item[1] = new Item();
+	m_item[1]->SetPos(m_Width / 400, -m_Height / 400);
+	m_item[1]->SetVol(0.2f, 0.2f);
+	m_item[1]->SetTex(textures[3]);
+	m_item[1]->m_visible = true;
+	m_item[2] = new Item();
+	m_item[2]->SetPos(-m_Width / 400, -m_Height / 400);
+	m_item[2]->SetVol(0.2f, 0.2f);
+	m_item[2]->SetTex(textures[3]);
+	m_item[2]->m_visible = true;
+	m_item[3] = new Item();
+	m_item[3]->SetPos(-m_Width / 400, m_Height / 400);
+	m_item[3]->SetVol(0.2f, 0.2f);
+	m_item[3]->SetTex(textures[3]);
+	m_item[3]->m_visible = true;
+
 	//Add Hero Object
 	m_players[HERO_ID] = Player();
 	m_players[HERO_ID].SetPos(0.0f, 0.0f);
 	m_players[HERO_ID].SetColor(1.0f, 1.0f, 1.0f, 1.0f);
-	m_players[HERO_ID].SetVol(0.5f, 0.5f);
+	m_players[HERO_ID].SetVol(0.3f, 0.3f);
 	m_players[HERO_ID].SetVel(0.0f, 0.0f);
 	m_players[HERO_ID].SetMass(1.0f);
 	m_players[HERO_ID].SetFriction(0.6f);
@@ -52,7 +79,7 @@ ScnMgr::ScnMgr(int socket)
 	m_players[1] = Player();
 	m_players[1].SetPos(2.0f, 0.0f);
 	m_players[1].SetColor(1.0f, 1.0f, 1.0f, 1.0f);
-	m_players[1].SetVol(0.5f, 0.5f);
+	m_players[1].SetVol(0.3f, 0.3f);
 	m_players[1].SetVel(0.0f, 0.0f);
 	m_players[1].SetMass(1.0f);
 	m_players[1].SetFriction(0.6f);
@@ -105,30 +132,43 @@ void ScnMgr::Update(float fTimeElapsed)
 	}
 
 	//Collision Detect
-
-	
 	for (auto& p_pair : m_players)
 	{
+		if (p_pair.second.m_visible == false) continue;
 		auto& player = p_pair.second;
-		//총알, 플레이어 체크
-		for (auto & bullet : player.bullets)
-		{
-			if (bullet.m_visible == false) continue;
-			for (auto& p_other : m_players)
-			{
-				if (p_other.first == p_pair.first) continue;
-				if (p_other.second.isOverlap(bullet)) {
-					//데미지 처리
-					cout << "Collision" << endl;
-				}
-			}
-		}
 
 		//플레이어, 벽 체크
 		for (auto& wall : m_wall)
 		{
 			if (player.isOverlap(*wall)) {
 				player.correctpos(*wall);
+			}
+		}
+
+		//플레이어, 아이템 체크
+		for (auto& item : m_item)
+		{
+			if (item->m_visible == false) continue;
+			if (player.isOverlap(*item)) {
+				player.weapon = item->type;
+				item->m_visible = false;
+			}
+		}
+
+		//총알, 플레이어 체크
+		for (auto & bullet : player.bullets)
+		{
+			if (bullet.m_visible == false) continue;
+			for (auto& p_other : m_players)
+			{
+				if (p_other.second.m_visible == false) continue;
+				if (p_other.first == p_pair.first) continue;
+				if (p_other.second.isOverlap(bullet)) {
+					bullet.m_visible = false;
+					//데미지처리 & 체력이 0이하면
+					if (p_other.second.getDamage(bullet))
+						p_other.second.die();
+				}
 			}
 		}
 	}
@@ -142,12 +182,19 @@ void ScnMgr::RenderScene()
 
 	m_Renderer->DrawTextureRect(m_background->m_pos.x * 100, m_background->m_pos.y * 100, 0, m_background->m_vol.x * 100, m_background->m_vol.y * 100, 0, m_background->m_color[0], m_background->m_color[1], m_background->m_color[2], m_background->m_color[3], m_background->m_texID);
 
+	for (auto& item : m_item)
+	{
+		if (item->m_visible == false) continue;
+		m_Renderer->DrawTextureRect(item->m_pos.x * 100, item->m_pos.y * 100, 0, item->m_vol.x * 100, item->m_vol.y * 100, 0, item->m_color[0], item->m_color[1], item->m_color[2], item->m_color[3], item->m_texID);
+	}
+
 	for (auto &p : m_players) {
 		auto& o = p.second;
+		if (o.m_visible == false) continue;
 		for (auto& b : o.bullets)
 		{
 			if (b.m_visible == false) continue;
-			m_Renderer->DrawTextureRect(b.m_pos.x * 100, b.m_pos.y * 100, 0, b.m_vol.x * 100, b.m_vol.y * 100, 0, b.m_color[0], b.m_color[1], b.m_color[2], b.m_color[3], b.m_texID);
+			m_Renderer->DrawTextureRect(b.m_pos.x * 100, b.m_pos.y * 100, 0, b.m_vol.x * 100, b.m_vol.y * 100, 0, b.m_color[0], b.m_color[1], b.m_color[2], b.m_color[3], bullettextures[b.type]);
 		}
 		m_Renderer->DrawTextureRect(o.m_pos.x * 100, o.m_pos.y * 100, 0, o.m_vol.x * 100, o.m_vol.y * 100, 0, o.m_color[0], o.m_color[1], o.m_color[2], o.m_color[3], o.m_texID);
 	}
