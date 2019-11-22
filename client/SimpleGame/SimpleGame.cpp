@@ -1,3 +1,5 @@
+#pragma once
+
 /*
 Copyright 2017 Lee Taek Hee (Korea Polytech University)
 
@@ -7,7 +9,6 @@ it under the terms of the What The Hell License. Do it plz.
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY.
 */
-
 #include "stdafx.h"
 #include <iostream>
 #include "Dependencies\glew.h"
@@ -18,8 +19,14 @@ but WITHOUT ANY WARRANTY.
 #include <WinSock2.h>
 #pragma comment(lib, "ws2_32")
 
+#include <thread>
+#include <queue>
+#include <mutex>
+#include "..\..\server\server\PacketMgr.h"
+
 #define SERVERIP "127.0.0.1"
 #define SERVERPORT 9000
+#define MAX_BUFFER_SIZE = 50;
 
 ScnMgr *g_ScnMgr = NULL;
 SOCKET g_socket;
@@ -28,12 +35,111 @@ int g_PrevTime;
 constexpr int WIDTH_BIAS = WINDOW_WIDTH / 2;
 constexpr int HEIGHT_BIAS = WINDOW_HEIGHT / 2;
 
+
+//Message Queue
+mutex RecvLock;
+queue<int> RecvQueue;
+queue<Vector2d> RecvAddData;
+
+void PacketReceiver(SOCKET socket)
+{
+	int retval;
+	int packet = 0;
+	char buffer[50];
+	char savedPacket[50];
+	Vector2d addData;
+	bool isAdd = false;
+
+	unsigned char* data = (unsigned char*)buffer;
+	while (true) {
+		isAdd = false;
+		retval = recv(socket, buffer, sizeof(int), 0);
+		if (retval == 0 || retval == SOCKET_ERROR)
+		{
+			closesocket(socket);
+			return;
+		}
+		memcpy(&packet, buffer, sizeof(int));
+
+		int packet_type = get_packet_type(packet);
+		if (packet_type == p_obj) {
+			int packet_info = get_packet_obj_info(packet);
+			if (packet_info == obj_position) {
+				isAdd = true;
+				recv(socket, (char*)& addData, sizeof(addData), 0);
+			}
+		}
+
+		RecvLock.lock();
+		RecvQueue.emplace(packet);
+		if (isAdd)
+			RecvAddData.emplace(addData);
+		RecvLock.unlock();
+	}
+}
+void ProcessObjectPacket(const int& packet, queue<Vector2d>& addData) {
+	int mover = get_packet_player_num(packet);
+	int objtype = get_packet_obj_type(packet);
+	int objinfo = get_packet_obj_info(packet);
+	
+	switch (objinfo)
+	{
+	case obj_position:
+	{
+		switch (objtype)
+		{
+		case obj_player:
+			Vector2d Data = addData.front(); addData.pop();
+			g_ScnMgr->m_players[mover].m_pos = Data;
+			break;
+		}
+	}
+		break;
+	}
+
+}
+void ProcessPacket() {
+	queue<int> cRecvQueue;
+	queue<Vector2d> cAddData;
+
+	RecvLock.lock();
+	if (RecvQueue.empty() == false) {
+		cRecvQueue = RecvQueue;
+		while (RecvQueue.empty() == false)
+			RecvQueue.pop();
+
+		if (RecvAddData.empty() == false) {
+			cAddData = RecvAddData;
+			while (RecvAddData.empty() == false)
+				RecvAddData.pop();
+		}
+	}
+	RecvLock.unlock();
+
+	while (cRecvQueue.empty() == false)
+	{
+		int packet = cRecvQueue.front(); cRecvQueue.pop();
+		int packet_type = get_packet_type(packet);
+
+		switch (packet_type)
+		{
+		case p_obj:
+			ProcessObjectPacket(packet, cAddData);
+			break;
+
+		case p_event:
+			break;
+		}
+	}
+}
+
 void RenderScene(int temp)
 {
 	int curTime = glutGet(GLUT_ELAPSED_TIME);
 	int eTime = curTime - g_PrevTime;
 	g_PrevTime = curTime;
 
+	ProcessPacket();
 	g_ScnMgr->Update(eTime / 1000.f);
 	g_ScnMgr->RenderScene();
 	glutSwapBuffers();
@@ -89,6 +195,12 @@ int main(int argc, char **argv)
 	serverAddr.sin_addr.s_addr = inet_addr(SERVERIP);
 	g_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	::connect(g_socket, (SOCKADDR*)&serverAddr, sizeof(serverAddr));
+	cout << "Connect To Server\n";
+
+	int myid;
+	recv(g_socket, (char*)& myid, sizeof(int), 0);
+	cout << "My id : " << myid << endl;
+	thread recvThread{ PacketReceiver, g_socket };
 
 	// Initialize GL things
 	glutInit(&argc, argv);
@@ -108,7 +220,7 @@ int main(int argc, char **argv)
 	}
 
 	// Initialize Renderer
-	g_ScnMgr = new ScnMgr(g_socket);
+	g_ScnMgr = new ScnMgr(g_socket, myid);
 
 	glutDisplayFunc(Display);
 	glutIdleFunc(Idle);
@@ -117,13 +229,13 @@ int main(int argc, char **argv)
 	glutIgnoreKeyRepeat(1);
 	glutMouseFunc(MouseInput);
 	glutMotionFunc(MouseMotion);
-	//glutSpecialFunc(SpecialKeyDownInput);
-	//glutSpecialUpFunc(SpecialKeyUpInput);
 
 	g_PrevTime = glutGet(GLUT_ELAPSED_TIME);
 	glutTimerFunc(16, RenderScene, 0);
 
 	glutMainLoop();
+
+	recvThread.join();
 
 	if(g_ScnMgr)
 		delete g_ScnMgr;

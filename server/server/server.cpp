@@ -41,8 +41,12 @@ Object* m_wall[4];
 Item* m_item[4];
 map<int, Player> PlayerList;
 
+//Error Handler
+void err_quit(const char* msg);
+void err_display(const char* msg);
+
 //Message Process
-void ProcessInputPacket(const int& packet) {
+void ProcessInputPacket(const int& packet, queue<Vector2d>& addData) {
 	int sender = get_packet_player_num(packet);
 	int input = get_packet_input(packet);
 	switch (input)
@@ -74,6 +78,11 @@ void ProcessInputPacket(const int& packet) {
 	case input_Dup:
 		PlayerList[sender].m_keyD = false;
 		break;
+
+	case input_Mleft:
+		Vector2d Data = addData.front(); addData.pop();
+		PlayerList[sender].ShootBullet(Data);
+		break;
 	}
 }
 void PacketReceiver(SOCKET socket)
@@ -81,10 +90,12 @@ void PacketReceiver(SOCKET socket)
 	int retval;
 	int packet = 0;
 	char buffer[MAX_BUFFER_SIZE];
-	char savedPacket[MAX_BUFFER_SIZE];
+	bool isAdd = false;
+	Vector2d addData;
 
 	unsigned char* data = (unsigned char*)buffer;
 	while (true) {
+		isAdd = false;
 		retval = recv(socket, buffer, sizeof(int), 0);
 		if (retval == CLIENT_EXIT || retval == SOCKET_ERROR)
 		{
@@ -94,8 +105,22 @@ void PacketReceiver(SOCKET socket)
 		}
 		memcpy(&packet, buffer, sizeof(int));
 
+		int packet_type = get_packet_type(packet);
+		switch (packet_type)
+		{
+		case p_input:
+			int packet_input = get_packet_input(packet);
+			if (packet_input == input_Mleft) {
+				isAdd = true;
+				recv(socket, (char*)& addData, sizeof(addData), 0);
+			}
+			break;
+		};
+
 		RecvLock.lock();
 		RecvQueue.emplace(packet);
+		if (isAdd)
+			RecvAddData.emplace(addData);
 		RecvLock.unlock();
 	}
 }
@@ -106,12 +131,12 @@ void ProcessPacket() {
 	RecvLock.lock();
 	if (RecvQueue.empty() == false) {
 		cRecvQueue = RecvQueue;
-		while (RecvQueue.empty())
+		while (RecvQueue.empty() == false)
 			RecvQueue.pop();
 
 		if (RecvAddData.empty() == false) {
 			cAddData = RecvAddData;
-			while (RecvAddData.empty())
+			while (RecvAddData.empty() == false)
 				RecvAddData.pop();
 		}
 	}
@@ -143,6 +168,7 @@ void SendGameState() {
 	for (auto& player : PlayerList) {
 		int packet = 0;
 		pTurnOn(packet, p_obj);
+		pTurnOn(packet, obj_player);
 		pTurnOn(packet, obj_position);
 		packet |= player.first;
 		send(player.second.m_socket, (const char*)& packet, sizeof(int), 0);
@@ -216,7 +242,7 @@ int main()
 
 		//敲饭捞绢 立加贸府
 		send_packet_player_id(client_sock, g_curUser);
-		int playernum = get_packet_player_num(g_curUser);
+		int playernum = get_player_num(g_curUser);
 		PlayerList[playernum] = Player();
 		PlayerList[playernum].m_socket = client_sock;
 		PlayerList[playernum].SetPos(0.0f, 0.0f);
