@@ -158,6 +158,14 @@ Player::Player() : Object()
 {
 	m_visible = true;
 	weapon = 0;
+
+	SetPos(0.0f, 0.0f);
+	SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+	SetVol(0.3f, 0.3f);
+	SetVel(0.0f, 0.0f);
+	SetMass(1.0f);
+	SetFriction(0.6f);
+
 	m_remainingBulletCoolTime = m_defaultBulletCoolTime[weapon];
 }
 Player::~Player() {};

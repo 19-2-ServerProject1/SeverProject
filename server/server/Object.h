@@ -85,6 +85,7 @@ private:
 	int m_damage[3] = { 30, 20, 50 };
 
 public:
+	int m_id;
 	int m_hp = 100;
 	int weapon = 0;
 	Bullet bullets[100];

@@ -86,14 +86,47 @@ void ProcessObjectPacket(const int& packet, queue<Vector2d>& addData) {
 	{
 	case obj_position:
 	{
+			switch (objtype)
+			{
+				case obj_player: {
+					Vector2d Data = addData.front(); addData.pop();
+					g_ScnMgr->m_players[mover].m_visible = true;
+					g_ScnMgr->m_players[mover].m_pos = Data;
+				}
+					break;
+
+				case obj_bullet: {
+					int idx = get_packet_bullet_idx(packet);
+					int type = get_packet_bullet_type(packet);
+					Vector2d Data = addData.front(); addData.pop();
+					g_ScnMgr->m_players[mover].bullets[idx].m_visible = true;
+					g_ScnMgr->m_players[mover].bullets[idx].type = type;
+					g_ScnMgr->m_players[mover].bullets[idx].m_pos = Data;
+				}
+					break;
+			}	
+	}
+	break;
+
+	case obj_destroy:
 		switch (objtype)
 		{
-		case obj_player:
-			Vector2d Data = addData.front(); addData.pop();
-			g_ScnMgr->m_players[mover].m_pos = Data;
-			break;
+			case obj_player:
+				g_ScnMgr->m_players[mover].m_visible = false;
+				break;
+
+			case obj_bullet: {
+				int idx = get_packet_bullet_idx(packet);
+				g_ScnMgr->m_players[mover].bullets[idx].m_visible = false;
+				break;
+			}
+
+			case obj_item: {
+				int idx = get_packet_bullet_idx(packet);
+				g_ScnMgr->m_item[idx]->m_visible = false;
+				break;
+			}
 		}
-	}
 		break;
 	}
 
