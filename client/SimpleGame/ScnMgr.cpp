@@ -14,26 +14,50 @@ ScnMgr::ScnMgr(int socket)
 		std::cout << "Renderer could not be initialized.. \n";
 	}
 
-	m_players[HERO_ID] = Player();
+	textures[0] = m_Renderer->GenPngTexture("./Textures/bg.png");
+	textures[1] = m_Renderer->GenPngTexture("./Textures/player.png");
+	textures[2] = m_Renderer->GenPngTexture("./Textures/block.png");
+
+	//Add Background
+	m_background = new Object();
+	m_background->SetPos(0, 0);
+	m_background->SetVol(m_Width / 100, m_Height / 100);
+	m_background->SetTex(textures[0]);
+
+	//Add Unvisible Wall
+	m_wall[0] = new Object();
+	m_wall[0]->SetPos((m_Width+m_Height) / 200, 0);
+	m_wall[0]->SetVol(m_Height / 100, m_Height / 100);
+	m_wall[1] = new Object();
+	m_wall[1]->SetPos(-(m_Width + m_Height) / 200, 0);
+	m_wall[1]->SetVol(m_Height / 100, m_Height / 100);
+	m_wall[2] = new Object();
+	m_wall[2]->SetPos(0, (m_Width + m_Height) / 200);
+	m_wall[2]->SetVol(m_Width / 100, m_Width / 100);
+	m_wall[3] = new Object();
+	m_wall[3]->SetPos(0, -(m_Width + m_Height) / 200);
+	m_wall[3]->SetVol(m_Width / 100, m_Width / 100);
 
 	//Add Hero Object
+	m_players[HERO_ID] = Player();
 	m_players[HERO_ID].SetPos(0.0f, 0.0f);
 	m_players[HERO_ID].SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 	m_players[HERO_ID].SetVol(0.5f, 0.5f);
 	m_players[HERO_ID].SetVel(0.0f, 0.0f);
 	m_players[HERO_ID].SetMass(1.0f);
 	m_players[HERO_ID].SetFriction(0.6f);
-
-	//Add Background
-	m_background = new Object();
-	m_background->SetPos(0, 0);
-	m_background->SetVol(m_Width / 100, m_Height / 100);
-
-	textures[0] = m_Renderer->GenPngTexture("./Textures/bg.png");
-	textures[1] = m_Renderer->GenPngTexture("./Textures/player.png");
-	textures[2] = m_Renderer->GenPngTexture("./Textures/block.png");
-	m_background->SetTex(textures[0]);
 	m_players[HERO_ID].SetTex(textures[1]);
+
+	//Add Test Object
+	m_players[1] = Player();
+	m_players[1].SetPos(2.0f, 0.0f);
+	m_players[1].SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+	m_players[1].SetVol(0.5f, 0.5f);
+	m_players[1].SetVel(0.0f, 0.0f);
+	m_players[1].SetMass(1.0f);
+	m_players[1].SetFriction(0.6f);
+	m_players[1].SetTex(textures[1]);
+
 }
 ScnMgr::~ScnMgr()
 {
@@ -75,19 +99,36 @@ void ScnMgr::Update(float fTimeElapsed)
 		m_players[HERO_ID].ShootBullet(m_mousepos);
 	}
 
-	m_players[HERO_ID].Update(fTimeElapsed);
+	for (auto& p_player : m_players)
+	{
+		p_player.second.Update(fTimeElapsed);
+	}
 
 	//Collision Detect
+
+	
 	for (auto& p_pair : m_players)
 	{
 		auto& player = p_pair.second;
+		//총알, 플레이어 체크
 		for (auto & bullet : player.bullets)
 		{
 			if (bullet.m_visible == false) continue;
-			for (auto& p_pair : m_players)
+			for (auto& p_other : m_players)
 			{
-				if (p_pair.second.isOverlap(bullet))
+				if (p_other.first == p_pair.first) continue;
+				if (p_other.second.isOverlap(bullet)) {
+					//데미지 처리
 					cout << "Collision" << endl;
+				}
+			}
+		}
+
+		//플레이어, 벽 체크
+		for (auto& wall : m_wall)
+		{
+			if (player.isOverlap(*wall)) {
+				player.correctpos(*wall);
 			}
 		}
 	}

@@ -15,6 +15,7 @@ private :
 
 	Renderer *m_Renderer = NULL;
 	Object* m_background = NULL;
+	Object* m_wall[4];
 	map<int, Player> m_players;
 	int textures[3];
 
