@@ -7,11 +7,13 @@
 
 class ScnMgr
 {
-private :
+public:
 	int m_Width = WINDOW_WIDTH;
 	int m_Height = WINDOW_HEIGHT;
 
+	//NW
 	int soc;
+	int MYID;
 
 	Renderer *m_Renderer = NULL;
 	Object* m_background = NULL;
@@ -39,8 +41,8 @@ private :
 
 	void DoGarbageCollection();
 
-public:
-	ScnMgr(int s);
+
+	ScnMgr(int s, int id);
 	~ScnMgr();
 	
 	void Update(float fTimeElapsed);
@@ -53,8 +55,7 @@ public:
 	void SpecialKeyUpInput(unsigned char key, int x, int y);
 	void MouseInput(int button, int state, int x, int y);
 	void MouseMotion(int x, int y);
+	
+	//
 
-	// Objects
-	int AddObject(Vector2d pos, Vector2d vol, Vector2d vel, float r, float g, float b, float a, float mass, float fricCoef, int type);
-	void DeleteObject(int idx);
 };
