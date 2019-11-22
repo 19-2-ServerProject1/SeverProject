@@ -17,7 +17,7 @@ using namespace std;
 #include "PacketMgr.h"
 
 #define SERVERPORT 9000
-#define MAX_PLAYER 1
+#define MAX_PLAYER 3
 #define MAX_BUFFER_SIZE 200
 
 #define CLIENT_EXIT 0
@@ -424,17 +424,19 @@ void Update(float fTimeElapsed)
 		}
 
 		//총알, 플레이어 체크
-		for (auto& bullet : player.bullets)
+		for (int i=0;i<MAX_BULLET;++i)
 		{
-			if (bullet.m_visible == false) continue;
+			if (player.bullets[i].m_visible == false) continue;
 			for (auto& p_other : PlayerList)
 			{
 				if (p_other.second.m_visible == false) continue;
 				if (p_other.first == p_pair.first) continue;
-				if (p_other.second.isOverlap(bullet)) {
-					bullet.m_visible = false;
+				if (p_other.second.isOverlap(player.bullets[i])) {
+					player.bullets[i].m_visible = false;
+					int packet = make_packet_destroy_bullet(player.m_id, i);
+					SendQueue.emplace_back(packet);
 					//데미지처리 & 체력이 0이하면
-					if (p_other.second.getDamage(bullet))
+					if (p_other.second.getDamage(player.bullets[i]))
 						p_other.second.die();
 				}
 			}
