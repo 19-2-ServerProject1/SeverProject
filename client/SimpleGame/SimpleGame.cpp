@@ -131,6 +131,19 @@ void ProcessObjectPacket(const int& packet, queue<Vector2d>& addData) {
 	}
 
 }
+void ProcessEventPacket(const int& packet) {
+	int client = get_packet_player_num(packet);
+	int event_type = get_packet_event_type(packet);
+
+	switch (event_type)
+	{
+	case event_hit: {
+		int damage = get_packet_bullet_idx(packet);
+		g_ScnMgr->m_players[client].m_hp -= damage;
+		break;
+	}
+	}
+}
 void ProcessPacket() {
 	queue<int> cRecvQueue;
 	queue<Vector2d> cAddData;
@@ -161,6 +174,7 @@ void ProcessPacket() {
 			break;
 
 		case p_event:
+			ProcessEventPacket(packet);
 			break;
 		}
 	}

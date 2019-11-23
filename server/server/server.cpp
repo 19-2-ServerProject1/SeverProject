@@ -17,12 +17,13 @@ using namespace std;
 #include "PacketMgr.h"
 
 #define SERVERPORT 9000
-#define MAX_PLAYER 3
+#define MAX_PLAYER 2
 #define MAX_BUFFER_SIZE 200
 
 #define CLIENT_EXIT 0
 
 int g_curUser;
+float refreshtime;
 
 //Threads
 vector<thread> threads;
@@ -221,6 +222,7 @@ void SendGameState() {
 		for (auto& p_other_player : PlayerList)
 		{
 			auto& other_player = p_other_player.second;
+			if (other_player.m_visible == false) continue;
 			send_packet_player_pos(player, other_player);
 			for (int i = 0; i < MAX_BULLET; ++i)
 				if (other_player.bullets[i].m_visible)
@@ -237,8 +239,6 @@ void DoGarbageCollection();
 
 int main()
 {
-
-
 	int retval;
 	//TCP 소켓 세팅
 	WSADATA wsa;
@@ -297,15 +297,21 @@ int main()
 
 	cout << "All User Connected, Start Game Logic\n";
 	//게임 로직
+	refreshtime = 1.0f / 30.0f;
+	float remain_time = refreshtime;
 	Initialize();
 	Timer timer;
 	timer.setFPS(60.0f);
 	timer.tick();
+
 	while (true) {
 		float fTimeElapsed = timer.tick();
 		ProcessPacket();
 		Update(fTimeElapsed);
-		SendGameState();
+		if ((remain_time -= fTimeElapsed) <= 0) {
+			SendGameState();
+			remain_time += refreshtime;
+		}
 	}
 
 	for (thread& t : threads)
@@ -345,6 +351,7 @@ void err_display(const char* msg) {
 //Scene Process
 void Initialize()
 {
+
 	//Add Background
 	m_background = new Object();
 	m_background->SetPos(0, 0);
@@ -435,9 +442,17 @@ void Update(float fTimeElapsed)
 					player.bullets[i].m_visible = false;
 					int packet = make_packet_destroy_bullet(player.m_id, i);
 					SendQueue.emplace_back(packet);
-					//데미지처리 & 체력이 0이하면
-					if (p_other.second.getDamage(player.bullets[i]))
+					if (p_other.second.getDamage(player.bullets[i])) {
+						//사망처리
 						p_other.second.die();
+						int packet = make_packet_destroy_player(p_other.second.m_id);
+						SendQueue.emplace_back(packet);
+					}
+					else {
+						//데미지처리
+						int packet = make_packet_hit_player(p_other.second.m_id, player.m_damage[player.bullets[i].type]);
+						SendQueue.emplace_back(packet);
+					}
 				}
 			}
 		}

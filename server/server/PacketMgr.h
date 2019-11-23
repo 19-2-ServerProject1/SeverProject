@@ -53,6 +53,8 @@ void pTurnOff(int& p_iflag, const int pt);
 int make_packet_input(const int& client, int key);
 int make_packet_destroy_bullet(const int& client, int idx);
 int make_packet_destroy_item(int idx);
+int make_packet_destroy_player(const int& client);
+int make_packet_hit_player(const int& client, int damage);
 int get_packet_type(const int& packet);
 int get_packet_obj_info(const int& packet);
 int get_packet_obj_type(const int& packet);
@@ -60,6 +62,7 @@ int get_packet_player_num(const int& packet);
 int get_packet_input(const int& packet);
 int get_packet_bullet_idx(const int& packet);
 int get_packet_bullet_type(const int& packet);
+int get_packet_event_type(const int& packet);
 
 int get_player_num(const int& num);
 
