@@ -13,6 +13,12 @@ enum player_num {//ÈÄ¿¡ Color·Î
 	player3 = 0x00400000,
 	player4 = 0x00800000,
 };
+enum packet_system {
+	system_login_fail = 0x00000000,
+	system_login_ok = 0x00000001,
+	system_start = 0x00000002,
+	system_end = 0x00000004,
+};
 enum packet_input {
 	input_Wdown = 0x00001000,
 	input_Wup = 0x00002000,
@@ -55,6 +61,7 @@ int make_packet_destroy_bullet(const int& client, int idx);
 int make_packet_destroy_item(int idx);
 int make_packet_destroy_player(const int& client);
 int make_packet_hit_player(const int& client, int damage);
+int make_packet_game_end(const int& winner);
 int get_packet_type(const int& packet);
 int get_packet_obj_info(const int& packet);
 int get_packet_obj_type(const int& packet);
@@ -63,6 +70,7 @@ int get_packet_input(const int& packet);
 int get_packet_bullet_idx(const int& packet);
 int get_packet_bullet_type(const int& packet);
 int get_packet_event_type(const int& packet);
+int get_packet_system_type(const int& packet);
 
 int get_player_num(const int& num);
 
