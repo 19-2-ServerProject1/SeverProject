@@ -27,6 +27,9 @@ ScnMgr::ScnMgr(int socket, int id)
 	bullettextures[1] = m_Renderer->GenPngTexture("./Textures/bullet2.png");
 	bullettextures[2] = m_Renderer->GenPngTexture("./Textures/bullet3.png");
 
+	winlose[0] = m_Renderer->GenPngTexture("./Textures/win.png");
+	winlose[1] = m_Renderer->GenPngTexture("./Textures/lose.png");
+
 	//Add Background
 	m_background = new Object();
 	m_background->SetPos(0, 0);
@@ -183,6 +186,13 @@ void ScnMgr::RenderScene()
 			m_Renderer->DrawTextureRect(b.m_pos.x * 100, b.m_pos.y * 100, 0, 5, 5, 0, 1, 1, 1, 1, bullettextures[b.type]);
 		}
 		m_Renderer->DrawTextureRect(o.m_pos.x * 100, o.m_pos.y * 100, 0, o.m_vol.x * 100, o.m_vol.y * 100, 0, o.m_color[0], o.m_color[1], o.m_color[2], o.m_color[3], textures[1]);
+	}
+
+	if (isEnd == true) {
+		if (MYID != winner)
+			m_Renderer->DrawTextureRect(0, 0, 0, m_Width , m_Height, 0, 1, 1, 1, 1, winlose[1]);
+		else if(MYID == winner)
+			m_Renderer->DrawTextureRect(0, 0, 0, m_Width , m_Height, 0, 1, 1, 1, 1, winlose[0]);
 	}
 }
 
