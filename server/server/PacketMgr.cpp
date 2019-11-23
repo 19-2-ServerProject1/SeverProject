@@ -45,6 +45,14 @@ int make_packet_hit_player(const int& client, int damage) {
 	pTurnOn(packet, damage);
 	return packet;
 }
+int make_packet_game_end(const int& winner)
+{
+	int packet = 0;
+	pTurnOn(packet, p_system);
+	pTurnOn(packet, system_end);
+	pTurnOn(packet, winner);
+	return packet;
+}
 int get_packet_type(const int& packet) {
 	return packet & 0x000F0000;
 }
@@ -66,6 +74,10 @@ int get_packet_event_type(const int& packet) {
 int get_packet_bullet_type(const int& packet) {
 	int type = packet >> 24;
 	return type & 0x000000FF;
+}
+int get_packet_system_type(const int& packet)
+{
+	return packet & 0x0000000F;
 }
 
 int get_packet_bullet_idx(const int& packet)

@@ -14,6 +14,8 @@ public:
 	//NW
 	int soc;
 	int MYID;
+	bool isEnd = false;
+	int winner = -1;
 
 	Renderer *m_Renderer = NULL;
 	Object* m_background = NULL;
@@ -22,6 +24,7 @@ public:
 	map<int, Player> m_players;
 	int textures[4];
 	int bullettextures[3];
+	int winlose[2];
 
 	//Key Inputs
 	bool m_keyW = false;

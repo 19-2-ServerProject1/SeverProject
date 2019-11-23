@@ -36,9 +36,10 @@ list<int> SendQueue;
 list<Vector2d> SendAddData;
 
 //Scene Value
+bool isEnd = false;
+
 int m_Width = WINDOW_WIDTH;
 int m_Height = WINDOW_HEIGHT;
-Object* m_background = NULL;
 Object* m_wall[4];
 Item* m_item[MAX_ITEM];
 map<int, Player> PlayerList;
@@ -236,6 +237,16 @@ void SendGameState() {
 void Initialize();
 void Update(float fTimeElapsed);
 void DoGarbageCollection();
+void DeleteObjects() {
+	for (int i = 0; i < 4; i++) {
+		delete m_wall[i];
+		m_wall[i] = NULL;
+	}
+	for (int i = 0; i < MAX_ITEM; i++) {
+		delete m_item[i];
+		m_item[i] = NULL;
+	}
+}
 
 int main()
 {
@@ -265,59 +276,76 @@ int main()
 	SOCKADDR_IN clientAddr;
 	int addrlen = sizeof(SOCKADDR_IN);
 
-	//유저접속 대기
-	while (g_curUser < MAX_PLAYER) {
-		client_sock = accept(listen_socket, reinterpret_cast<SOCKADDR*>(&clientAddr), &addrlen);
-		if (client_sock == INVALID_SOCKET) {
-			err_display("accept()");
-			break;
-		}
-
-		cout << "PLAYER ACCPET : " << client_sock << endl;
-		++g_curUser;
-
-		//플레이어 접속처리
-		send_packet_player_id(client_sock, g_curUser);
-		int playernum = get_player_num(g_curUser);
-		PlayerList[playernum] = Player();
-		PlayerList[playernum].m_id = playernum;
-		PlayerList[playernum].m_socket = client_sock;
-		PlayerList[playernum].SetPos(0.0f, 0.0f);
-		PlayerList[playernum].SetColor(1.0f, 1.0f, 1.0f, 1.0f);
-		PlayerList[playernum].SetVol(0.3f, 0.3f);
-		PlayerList[playernum].SetVel(0.0f, 0.0f);
-		PlayerList[playernum].SetMass(1.0f);
-		PlayerList[playernum].SetFriction(0.6f);
-
-		if (retval == SOCKET_ERROR)
-			err_quit("Accept()_PlayerNum 할당.");
-
-		threads.emplace_back(PacketReceiver, client_sock);
-	}
-
-	cout << "All User Connected, Start Game Logic\n";
-	//게임 로직
-	refreshtime = 1.0f / 30.0f;
-	float remain_time = refreshtime;
-	Initialize();
-	Timer timer;
-	timer.setFPS(60.0f);
-	timer.tick();
-
 	while (true) {
-		float fTimeElapsed = timer.tick();
-		ProcessPacket();
-		Update(fTimeElapsed);
-		if ((remain_time -= fTimeElapsed) <= 0) {
-			SendGameState();
-			remain_time += refreshtime;
+		cout << "Start Player Accept\n";
+		//유저접속 대기
+		isEnd = false;
+		while (g_curUser < MAX_PLAYER) {
+			client_sock = accept(listen_socket, reinterpret_cast<SOCKADDR*>(&clientAddr), &addrlen);
+			if (client_sock == INVALID_SOCKET) {
+				err_display("accept()");
+				break;
+			}
+
+			cout << "PLAYER ACCPET : " << client_sock << endl;
+			++g_curUser;
+
+			//플레이어 접속처리
+			send_packet_player_id(client_sock, g_curUser);
+			int playernum = get_player_num(g_curUser);
+			PlayerList[playernum] = Player();
+			PlayerList[playernum].m_id = playernum;
+			PlayerList[playernum].m_socket = client_sock;
+			PlayerList[playernum].SetPos(0.0f, 0.0f);
+			PlayerList[playernum].SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+			PlayerList[playernum].SetVol(0.3f, 0.3f);
+			PlayerList[playernum].SetVel(0.0f, 0.0f);
+			PlayerList[playernum].SetMass(1.0f);
+			PlayerList[playernum].SetFriction(0.6f);
+
+			if (retval == SOCKET_ERROR)
+				err_quit("Accept()_PlayerNum 할당.");
+
+			threads.emplace_back(PacketReceiver, client_sock);
 		}
+
+		cout << "All User Connected, Start Game Logic\n";
+		//게임 로직
+		refreshtime = 1.0f / 30.0f;
+		float remain_time = refreshtime;
+		Initialize();
+		Timer timer;
+		timer.setFPS(60.0f);
+		timer.tick();
+
+		while (true) {
+			float fTimeElapsed = timer.tick();
+			ProcessPacket();
+			Update(fTimeElapsed);
+			if ((remain_time -= fTimeElapsed) <= 0) {
+				SendGameState();
+				remain_time += refreshtime;
+				if (isEnd == true) break;
+			}
+		}
+
+		//게임 종료처리
+		cout << "Match END | Disconnect All Players\n";
+		DeleteObjects();
+		for (auto& p_player : PlayerList)
+			closesocket(p_player.second.m_socket);
+		
+		for (thread& t : threads)
+			t.detach();
+		threads.clear();
+
+		g_curUser = 0;
 	}
 
 	for (thread& t : threads)
-		t.join();
+		if (t.joinable())
+			t.join();
 
-	//게임 종료처리
 	closesocket(listen_socket);
 	WSACleanup();
 }
@@ -351,12 +379,6 @@ void err_display(const char* msg) {
 //Scene Process
 void Initialize()
 {
-
-	//Add Background
-	m_background = new Object();
-	m_background->SetPos(0, 0);
-	m_background->SetVol(m_Width / 100, m_Height / 100);
-
 	//Add Unvisible Wall
 	m_wall[0] = new Object();
 	m_wall[0]->SetPos((m_Width + m_Height) / 200, 0);
@@ -456,6 +478,22 @@ void Update(float fTimeElapsed)
 				}
 			}
 		}
+	}
+
+	//종료 검사
+	int live_count = 0;
+	int last_liver = 0;
+	for (auto& p_player : PlayerList) {
+		if (p_player.second.m_visible == true) {
+			++live_count;
+			last_liver = p_player.second.m_id;
+		}
+	}
+	if (live_count <= 1) {
+		int packet = make_packet_game_end(last_liver);
+		SendQueue.emplace_back(packet);
+		isEnd = true;
+		return;
 	}
 
 	DoGarbageCollection();
