@@ -82,7 +82,7 @@ class Player : public Object
 private:
 	float m_remainingBulletCoolTime = 0.0f;
 	float m_defaultBulletCoolTime[3] = { 0.4f, 0.3f, 0.5f };
-	int m_damage[3] = { 30, 20, 50 };
+	
 
 public:
 	int m_id;
@@ -90,6 +90,7 @@ public:
 	int weapon = 0;
 	Bullet bullets[100];
 
+	int m_damage[3] = { 30, 20, 50 };
 
 	//Key Inputs
 	bool m_keyW = false;
