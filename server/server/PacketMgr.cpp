@@ -29,6 +29,22 @@ int make_packet_destroy_item(int idx) {
 	pTurnOn(packet, idx);
 	return packet;
 }
+int make_packet_destroy_player(const int& client) {
+	int packet = 0;
+	pTurnOn(packet, p_obj);
+	pTurnOn(packet, obj_player);
+	pTurnOn(packet, obj_destroy);
+	pTurnOn(packet, client);
+	return packet;
+}
+int make_packet_hit_player(const int& client, int damage) {
+	int packet = 0;
+	pTurnOn(packet, p_event);
+	pTurnOn(packet, event_hit);
+	pTurnOn(packet, client);
+	pTurnOn(packet, damage);
+	return packet;
+}
 int get_packet_type(const int& packet) {
 	return packet & 0x000F0000;
 }
@@ -43,6 +59,9 @@ int get_packet_player_num(const int& packet) {
 }
 int get_packet_input(const int& packet) {
 	return packet & 0x0000FFFF;
+}
+int get_packet_event_type(const int& packet) {
+	return packet & 0x0000F000;
 }
 int get_packet_bullet_type(const int& packet) {
 	int type = packet >> 24;
