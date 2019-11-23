@@ -144,6 +144,19 @@ void ProcessEventPacket(const int& packet) {
 	}
 	}
 }
+void ProcessSystemPacket(const int& packet) {
+	int client = get_packet_player_num(packet);
+	int system_type = get_packet_system_type(packet);
+
+	switch (system_type)
+	{
+	case system_end: {
+		g_ScnMgr->isEnd = true;
+		g_ScnMgr->winner = client;
+		break;
+	}
+	}
+}
 void ProcessPacket() {
 	queue<int> cRecvQueue;
 	queue<Vector2d> cAddData;
@@ -169,6 +182,10 @@ void ProcessPacket() {
 
 		switch (packet_type)
 		{
+		case p_system:
+			ProcessSystemPacket(packet);
+			break;
+
 		case p_obj:
 			ProcessObjectPacket(packet, cAddData);
 			break;
