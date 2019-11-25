@@ -96,38 +96,17 @@ void Object::Update(float fTimeElapsed)
 {
 	if (m_visible == false) return;
 
-	// Apply Friction
-	float velSize = m_vel.length();
-	if (velSize > 0.0f)
-	{
-		Vector2d acc = m_vel;
-		acc.normalize();
-		//Calc friction size
-		float nForce = m_mass * GRAVITY;
-		float frictionSize = nForce * m_friction;
+	const float bias = 30.0f;
+	Vector2d dir = m_dst - m_pos;
+	float len = dir.length();
+	float spd = len * bias;
+	dir.normalize();
+	dir *= fTimeElapsed * spd;
 
-		acc *= -frictionSize;
-		acc /= m_mass;
-		Vector2d newVel = m_vel + acc * fTimeElapsed;
+	if (dir.length() > len)
+		dir.normalize() * len;
 
-		if (newVel.x * m_vel.x < 0.f)
-		{
-			m_vel.x = 0;
-		}
-		else
-		{
-			m_vel.x = newVel.x;
-		}
-		if (newVel.y * m_vel.y < 0.f)
-		{
-			m_vel.y = 0;
-		}
-		else
-		{
-			m_vel.y = newVel.y;
-		}
-	}
-	m_pos += m_vel * fTimeElapsed;
+	m_pos += dir;
 }
 void Object::AddForce(Vector2d force, float fElapsedTime)
 {

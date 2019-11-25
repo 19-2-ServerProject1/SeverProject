@@ -17,7 +17,7 @@ using namespace std;
 #include "PacketMgr.h"
 
 #define SERVERPORT 9000
-#define MAX_PLAYER 1
+#define MAX_PLAYER 2
 #define MAX_BUFFER_SIZE 200
 
 #define CLIENT_EXIT 0
