@@ -30,6 +30,8 @@ ScnMgr::ScnMgr(int socket, int id)
 	winlose[0] = m_Renderer->GenPngTexture("./Textures/win.png");
 	winlose[1] = m_Renderer->GenPngTexture("./Textures/lose.png");
 
+	hpbar = m_Renderer->GenPngTexture("./Textures/hp.png");
+
 	//Add Background
 	m_background = new Object();
 	m_background->SetPos(0, 0);
@@ -188,6 +190,8 @@ void ScnMgr::RenderScene()
 			if (b.m_visible == false) continue;
 			m_Renderer->DrawTextureRect(b.m_pos.x * 100, b.m_pos.y * 100, 0, 5, 5, 0, 1, 1, 1, 1, bullettextures[b.type]);
 		}
+		float hp = o.m_hp / 100.0f;
+		m_Renderer->DrawTextureRect(o.m_pos.x * 100, (o.m_pos.y+0.19) * 100, 0, (o.m_vol.x * 100)*hp, 5, 0, o.m_color[0], o.m_color[1], o.m_color[2], o.m_color[3], hpbar);
 		m_Renderer->DrawTextureRect(o.m_pos.x * 100, o.m_pos.y * 100, 0, o.m_vol.x * 100, o.m_vol.y * 100, 0, o.m_color[0], o.m_color[1], o.m_color[2], o.m_color[3], textures[1]);
 	}
 

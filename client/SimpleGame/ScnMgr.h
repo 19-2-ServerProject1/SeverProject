@@ -25,6 +25,7 @@ public:
 	int textures[4];
 	int bullettextures[3];
 	int winlose[2];
+	int hpbar;
 
 	//Key Inputs
 	bool m_keyW = false;
