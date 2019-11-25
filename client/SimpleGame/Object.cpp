@@ -19,6 +19,7 @@ void Object::InitPhysics()
 	m_type = TYPE_NORMAL;
 
 	m_pos = Vector2d(0, 0);
+	m_dst = Vector2d(0, 0);
 	m_vel = Vector2d(0, 0);
 	m_acc = Vector2d(0, 0);
 	m_vol = Vector2d(0, 0);
