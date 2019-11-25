@@ -8,6 +8,7 @@ public:
 
 	int m_type;
 	Vector2d m_pos;
+	Vector2d m_dst;
 	Vector2d m_vel;
 	Vector2d m_acc;
 	Vector2d m_vol;

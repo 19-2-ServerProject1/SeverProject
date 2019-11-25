@@ -17,7 +17,7 @@ using namespace std;
 #include "PacketMgr.h"
 
 #define SERVERPORT 9000
-#define MAX_PLAYER 2
+#define MAX_PLAYER 1
 #define MAX_BUFFER_SIZE 200
 
 #define CLIENT_EXIT 0
@@ -489,12 +489,12 @@ void Update(float fTimeElapsed)
 			last_liver = p_player.second.m_id;
 		}
 	}
-	if (live_count <= 1) {
-		int packet = make_packet_game_end(last_liver);
-		SendQueue.emplace_back(packet);
-		isEnd = true;
-		return;
-	}
+	//if (live_count <= 1) {
+	//	int packet = make_packet_game_end(last_liver);
+	//	SendQueue.emplace_back(packet);
+	//	isEnd = true;
+	//	return;
+	//}
 
 	DoGarbageCollection();
 }
