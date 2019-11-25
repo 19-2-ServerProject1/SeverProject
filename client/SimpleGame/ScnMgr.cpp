@@ -163,6 +163,9 @@ void ScnMgr::Update(float fTimeElapsed)
 	//}
 
 	//DoGarbageCollection();
+
+	for (auto& p_pair : m_players)
+		p_pair.second.Update(fTimeElapsed);
 }
 void ScnMgr::RenderScene()
 {
