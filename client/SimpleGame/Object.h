@@ -55,6 +55,10 @@ private:
 	float m_defaultBulletCoolTime[3] = { 0.4f, 0.3f, 0.5f };
 
 public:
+	
+	//Player HP Default 100
+	int p_hp = 100;
+	
 	int weapon = 0;
 	Bullet bullets[100];
 

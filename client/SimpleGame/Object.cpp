@@ -155,6 +155,8 @@ void Player::Update(float fTimeElapsed)
 
 bool Player::CanShootBullet()
 {
+
+	if(p_hp > 0)p_hp -= 0.1;
 	return m_remainingBulletCoolTime <= 0.0000001f;
 }
 

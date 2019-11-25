@@ -120,6 +120,8 @@ int main(int argc, char **argv)
 	//glutSpecialFunc(SpecialKeyDownInput);
 	//glutSpecialUpFunc(SpecialKeyUpInput);
 
+
+
 	g_PrevTime = glutGet(GLUT_ELAPSED_TIME);
 	glutTimerFunc(16, RenderScene, 0);
 
@@ -128,6 +130,9 @@ int main(int argc, char **argv)
 	if(g_ScnMgr)
 		delete g_ScnMgr;
 	g_ScnMgr = NULL;
+
+
+	
 
 	closesocket(g_socket);
 	WSACleanup();
