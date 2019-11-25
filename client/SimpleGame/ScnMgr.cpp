@@ -98,8 +98,10 @@ void ScnMgr::RenderScene()
 	//UI
 	//왼쪽정렬....어떻게 하더라
 	//-Red
-	m_Renderer->DrawSolidRect(m_players[HERO_ID].m_pos.x * 100 , m_players[HERO_ID].m_pos.y * 100 + m_players[HERO_ID].m_vol.y * 100, 2.2, m_players[HERO_ID].p_hp,10,1, 1, 0, 0, 1);
-	cout << "hp pos : " << m_players[HERO_ID].p_hp << endl;
+	m_Renderer->DrawSolidRect((m_players[HERO_ID].m_pos.x * 100 ) + m_players[HERO_ID].p_hp , m_players[HERO_ID].m_pos.y * 100 + m_players[HERO_ID].m_vol.y * 100, 2.2,
+		m_players[HERO_ID].p_hp,10,1, 
+		1, 0, 0, 1);
+	
 	//-Black
 	int outline_size = 4;	
 	m_Renderer->DrawSolidRect(m_players[HERO_ID].m_pos.x * 100, m_players[HERO_ID].m_pos.y * 100 + m_players[HERO_ID].m_vol.y * 100, 2, 100 + outline_size, 10 + outline_size, 1, 0, 0, 0, 1);
