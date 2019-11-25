@@ -94,6 +94,16 @@ void ScnMgr::RenderScene()
 		}
 		m_Renderer->DrawTextureRect(o.m_pos.x * 100, o.m_pos.y * 100, 0, o.m_vol.x * 100, o.m_vol.y * 100, 0, o.m_color[0], o.m_color[1], o.m_color[2], o.m_color[3], o.m_texID);
 	}
+
+	//UI
+	//왼쪽정렬....어떻게 하더라
+	//-Red
+	m_Renderer->DrawSolidRect(m_players[HERO_ID].m_pos.x * 100 , m_players[HERO_ID].m_pos.y * 100 + m_players[HERO_ID].m_vol.y * 100, 2.2, m_players[HERO_ID].p_hp,10,1, 1, 0, 0, 1);
+	cout << "hp pos : " << m_players[HERO_ID].p_hp << endl;
+	//-Black
+	int outline_size = 4;	
+	m_Renderer->DrawSolidRect(m_players[HERO_ID].m_pos.x * 100, m_players[HERO_ID].m_pos.y * 100 + m_players[HERO_ID].m_vol.y * 100, 2, 100 + outline_size, 10 + outline_size, 1, 0, 0, 0, 1);
+
 }
 
 void ScnMgr::KeyDownInput(unsigned char key, int x, int y)
