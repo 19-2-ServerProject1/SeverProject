@@ -91,7 +91,7 @@ void ProcessObjectPacket(const int& packet, queue<Vector2d>& addData) {
 				case obj_player: {
 					Vector2d Data = addData.front(); addData.pop();
 					g_ScnMgr->m_players[mover].m_visible = true;
-					g_ScnMgr->m_players[mover].m_pos = Data;
+					g_ScnMgr->m_players[mover].m_dst = Data;
 				}
 					break;
 
@@ -99,9 +99,11 @@ void ProcessObjectPacket(const int& packet, queue<Vector2d>& addData) {
 					int idx = get_packet_bullet_idx(packet);
 					int type = get_packet_bullet_type(packet);
 					Vector2d Data = addData.front(); addData.pop();
+					if (g_ScnMgr->m_players[mover].bullets[idx].m_visible == false)
+						g_ScnMgr->m_players[mover].bullets[idx].m_pos = g_ScnMgr->m_players[mover].m_pos;
 					g_ScnMgr->m_players[mover].bullets[idx].m_visible = true;
 					g_ScnMgr->m_players[mover].bullets[idx].type = type;
-					g_ScnMgr->m_players[mover].bullets[idx].m_pos = Data;
+					g_ScnMgr->m_players[mover].bullets[idx].m_dst = Data;
 				}
 					break;
 			}	
