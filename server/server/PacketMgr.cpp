@@ -53,6 +53,13 @@ int make_packet_game_end(const int& winner)
 	pTurnOn(packet, winner);
 	return packet;
 }
+int make_packet_game_start()
+{
+	int packet = 0;
+	pTurnOn(packet, p_system);
+	pTurnOn(packet, system_start);
+	return packet;
+}
 int get_packet_type(const int& packet) {
 	return packet & 0x000F0000;
 }
