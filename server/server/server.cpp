@@ -17,12 +17,16 @@ using namespace std;
 #include "PacketMgr.h"
 
 #define SERVERPORT 9000
-#define MAX_PLAYER 3
+#define MAX_PLAYER 2
 #define MAX_BUFFER_SIZE 200
 
 #define CLIENT_EXIT 0
 
 int g_curUser;
+queue<int> idQueue;
+mutex idlock;
+int match_round;
+
 float refreshtime;
 
 //Threads
@@ -36,6 +40,8 @@ list<int> SendQueue;
 list<Vector2d> SendAddData;
 
 //Scene Value
+enum server_state {server_accept, server_play};
+int state;
 bool isEnd = false;
 
 int m_Width = WINDOW_WIDTH;
@@ -49,20 +55,10 @@ void err_quit(const char* msg);
 void err_display(const char* msg);
 
 //SendPacket
-void send_packet_player_id(SOCKET client, const int& playernum)
+void send_packet_player_id(SOCKET client, const int& id)
 {
 	int packet = 0;
-	switch (playernum) {
-	case 1:
-		pTurnOn(packet, player1);
-		break;
-	case 2:
-		pTurnOn(packet, player2);
-		break;
-	case 3:
-		pTurnOn(packet, player3);
-		break;
-	}
+	pTurnOn(packet, id);
 	send(client, (const char*)& packet, sizeof(int), 0);
 }
 void send_packet_player_pos(const Player& client, const Player& mover)
@@ -131,7 +127,7 @@ void ProcessInputPacket(const int& packet, queue<Vector2d>& addData) {
 		break;
 	}
 }
-void PacketReceiver(SOCKET socket)
+void PacketReceiver(SOCKET socket, int id)
 {
 	int retval;
 	int packet = 0;
@@ -147,6 +143,15 @@ void PacketReceiver(SOCKET socket)
 		{
 			closesocket(socket);
 			cout << "PLAYER EXIT : " << socket << endl;
+			if (state == server_accept) {
+				if(PlayerList.count(id) != 0)
+					if (PlayerList[id].match_round == match_round) {
+						idlock.lock();
+						g_curUser--;
+						idQueue.emplace(id);
+						idlock.unlock();
+					}
+			}
 			return;
 		}
 		memcpy(&packet, buffer, sizeof(int));
@@ -250,6 +255,12 @@ void DeleteObjects() {
 
 int main()
 {
+	idQueue.emplace(player1);
+	idQueue.emplace(player2);
+	idQueue.emplace(player3);
+	match_round = 0;
+
+
 	int retval;
 	//TCP 소켓 세팅
 	WSADATA wsa;
@@ -258,6 +269,14 @@ int main()
 
 	SOCKET listen_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (listen_socket == INVALID_SOCKET) err_quit("socket()");
+
+	//네이글 OFF, CLOSE 시 데이터 모두 전송 설정
+	LINGER opt;
+	opt.l_onoff = 1;
+	opt.l_linger = 10;
+	setsockopt(listen_socket, SOL_SOCKET, SO_LINGER, (const char*)&opt, sizeof(opt));
+	int opt_val = TRUE;
+	setsockopt(listen_socket, IPPROTO_TCP, TCP_NODELAY, (const char*)&opt_val, sizeof(opt_val));
 
 	SOCKADDR_IN serverAddr;
 	memset(&serverAddr, 0, sizeof(SOCKADDR_IN));
@@ -277,9 +296,13 @@ int main()
 	int addrlen = sizeof(SOCKADDR_IN);
 
 	while (true) {
+		match_round++;
 		cout << "Start Player Accept\n";
+		PlayerList.clear();
 		//유저접속 대기
+		state = server_accept;
 		isEnd = false;
+		g_curUser = 0;
 		while (g_curUser < MAX_PLAYER) {
 			client_sock = accept(listen_socket, reinterpret_cast<SOCKADDR*>(&clientAddr), &addrlen);
 			if (client_sock == INVALID_SOCKET) {
@@ -288,28 +311,34 @@ int main()
 			}
 
 			cout << "PLAYER ACCPET : " << client_sock << endl;
+
+			idlock.lock();
 			++g_curUser;
+			int id = idQueue.front(); idQueue.pop();
+			idlock.unlock();
 
 			//플레이어 접속처리
-			send_packet_player_id(client_sock, g_curUser);
-			int playernum = get_player_num(g_curUser);
-			PlayerList[playernum] = Player();
-			PlayerList[playernum].m_id = playernum;
-			PlayerList[playernum].m_socket = client_sock;
-			PlayerList[playernum].SetPos(0.0f, 0.0f);
-			PlayerList[playernum].SetColor(1.0f, 1.0f, 1.0f, 1.0f);
-			PlayerList[playernum].SetVol(0.3f, 0.3f);
-			PlayerList[playernum].SetVel(0.0f, 0.0f);
-			PlayerList[playernum].SetMass(1.0f);
-			PlayerList[playernum].SetFriction(0.6f);
+			send_packet_player_id(client_sock, id);
+			PlayerList[id] = Player();
+			PlayerList[id].match_round = match_round;
+			PlayerList[id].m_id = id;
+			PlayerList[id].m_socket = client_sock;
+			PlayerList[id].SetPos(0.0f, 0.0f);
+			PlayerList[id].SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+			PlayerList[id].SetVol(0.3f, 0.3f);
+			PlayerList[id].SetVel(0.0f, 0.0f);
+			PlayerList[id].SetMass(1.0f);
+			PlayerList[id].SetFriction(0.6f);
 
 			if (retval == SOCKET_ERROR)
 				err_quit("Accept()_PlayerNum 할당.");
 
-			threads.emplace_back(PacketReceiver, client_sock);
+			threads.emplace_back(PacketReceiver, client_sock, id);
 		}
 
-		cout << "All User Connected, Start Game Logic\n";
+		cout << "All User Connected, Start Match #" << match_round << endl;
+		state = server_play;
+		SendQueue.emplace_back(make_packet_game_start());
 		//게임 로직
 		refreshtime = 1.0f / 30.0f;
 		float remain_time = refreshtime;
@@ -322,7 +351,7 @@ int main()
 			float fTimeElapsed = timer.tick();
 			ProcessPacket();
 			Update(fTimeElapsed);
-			if ((remain_time -= fTimeElapsed) <= 0) {
+			if ((remain_time -= fTimeElapsed) <= 0 ) {
 				SendGameState();
 				remain_time += refreshtime;
 				if (isEnd == true) break;
@@ -332,14 +361,14 @@ int main()
 		//게임 종료처리
 		cout << "Match END | Disconnect All Players\n";
 		DeleteObjects();
-		for (auto& p_player : PlayerList)
+		for (auto& p_player : PlayerList) {
+			idQueue.emplace(p_player.second.m_id);
 			closesocket(p_player.second.m_socket);
+		}
 		
 		for (thread& t : threads)
 			t.detach();
 		threads.clear();
-
-		g_curUser = 0;
 	}
 
 	for (thread& t : threads)
@@ -489,12 +518,12 @@ void Update(float fTimeElapsed)
 			last_liver = p_player.second.m_id;
 		}
 	}
-	//if (live_count <= 1) {
-	//	int packet = make_packet_game_end(last_liver);
-	//	SendQueue.emplace_back(packet);
-	//	isEnd = true;
-	//	return;
-	//}
+	if (live_count <= 1) {
+		int packet = make_packet_game_end(last_liver);
+		SendQueue.emplace_back(packet);
+		isEnd = true;
+		return;
+	}
 
 	DoGarbageCollection();
 }

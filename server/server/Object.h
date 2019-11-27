@@ -86,6 +86,7 @@ private:
 
 public:
 	int m_id;
+	int match_round = -1;
 	int m_hp = 100;
 	int weapon = 0;
 	Bullet bullets[100];

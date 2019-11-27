@@ -37,6 +37,7 @@ constexpr int HEIGHT_BIAS = WINDOW_HEIGHT / 2;
 
 
 //Message Queue
+HANDLE connect_success;
 mutex RecvLock;
 queue<int> RecvQueue;
 queue<Vector2d> RecvAddData;
@@ -49,8 +50,8 @@ void PacketReceiver(SOCKET socket)
 	char savedPacket[50];
 	Vector2d addData;
 	bool isAdd = false;
-
 	unsigned char* data = (unsigned char*)buffer;
+
 	while (true) {
 		isAdd = false;
 		retval = recv(socket, buffer, sizeof(int), 0);
@@ -60,7 +61,6 @@ void PacketReceiver(SOCKET socket)
 			return;
 		}
 		memcpy(&packet, buffer, sizeof(int));
-
 		int packet_type = get_packet_type(packet);
 		if (packet_type == p_obj) {
 			int packet_info = get_packet_obj_info(packet);
@@ -153,10 +153,15 @@ void ProcessSystemPacket(const int& packet) {
 	switch (system_type)
 	{
 	case system_end: {
-		g_ScnMgr->isEnd = true;
+		closesocket(g_ScnMgr->soc);
 		g_ScnMgr->winner = client;
+		g_ScnMgr->m_state = ScnMgr::state_end;
 		break;
 	}
+	case system_start:
+		g_ScnMgr->m_state = ScnMgr::state_play;
+		g_ScnMgr->Init();
+		break;
 	}
 }
 void ProcessPacket() {
@@ -234,7 +239,46 @@ void MouseMotion(int x, int y)
 
 void KeyDownInput(unsigned char key, int x, int y)
 {
-	g_ScnMgr->KeyDownInput(key, x, y);
+	switch (g_ScnMgr->m_state)
+	{
+	case ScnMgr::state_title:
+	case ScnMgr::state_connect_error:
+	{
+		g_ScnMgr->m_state = ScnMgr::state_connect;
+		g_ScnMgr->RenderScene();
+		glutSwapBuffers();
+		SOCKADDR_IN serverAddr;
+		serverAddr.sin_family = AF_INET;
+		serverAddr.sin_port = htons(SERVERPORT);
+		serverAddr.sin_addr.s_addr = inet_addr(SERVERIP);
+		g_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		int retval = ::connect(g_socket, (SOCKADDR*)&serverAddr, sizeof(serverAddr));
+		if (retval == SOCKET_ERROR) {
+			closesocket(g_socket);
+			cout << "연결에러" << endl;
+			g_ScnMgr->m_state = ScnMgr::state_connect_error;
+		}
+		else
+		{
+			g_ScnMgr->m_state = ScnMgr::state_wait;
+			cout << "성공" << endl;
+			int myid;
+			recv(g_socket, (char*)&myid, sizeof(int), 0);
+			g_ScnMgr->MYID = myid;
+			g_ScnMgr->soc = g_socket;
+			thread recvThread{ PacketReceiver, g_socket };
+			recvThread.detach();
+		}
+		break;
+	}
+	case ScnMgr::state_play:
+		g_ScnMgr->KeyDownInput(key, x, y);
+		break;
+
+	case ScnMgr::state_end: {
+		g_ScnMgr->m_state = ScnMgr::state_title;
+	}
+	}
 }
 void KeyUpInput(unsigned char key, int x, int y)
 {
@@ -255,27 +299,18 @@ int main(int argc, char **argv)
 	// Initialize Socket
 	WSADATA wsa;
 	WSAStartup(MAKEWORD(2, 2), &wsa);
-	SOCKADDR_IN serverAddr;
-	serverAddr.sin_family = AF_INET;
-	serverAddr.sin_port = htons(SERVERPORT);
-	serverAddr.sin_addr.s_addr = inet_addr(SERVERIP);
-	g_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	::connect(g_socket, (SOCKADDR*)&serverAddr, sizeof(serverAddr));
-	cout << "Connect To Server\n";
-
-	int myid;
-	recv(g_socket, (char*)& myid, sizeof(int), 0);
-	cout << "My id : " << myid << endl;
-	thread recvThread{ PacketReceiver, g_socket };
 
 	// Initialize GL things
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
 	glutInitWindowPosition(0, 0);
 	glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
-	glutCreateWindow("Game Software Engineering KPU");
 
+	const char *windowTitle = "Game Software Engineering KPU";
+	glutCreateWindow("Game Software Engineering KPU");
+	HWND windowHandle = FindWindow(NULL, windowTitle);
 	glewInit();
+
 	if (glewIsSupported("GL_VERSION_3_0"))
 	{
 		std::cout << " GLEW Version is 3.0\n ";
@@ -286,7 +321,7 @@ int main(int argc, char **argv)
 	}
 
 	// Initialize Renderer
-	g_ScnMgr = new ScnMgr(g_socket, myid);
+	g_ScnMgr = new ScnMgr();
 
 	glutDisplayFunc(Display);
 	glutIdleFunc(Idle);
@@ -300,8 +335,6 @@ int main(int argc, char **argv)
 	glutTimerFunc(16, RenderScene, 0);
 
 	glutMainLoop();
-
-	recvThread.join();
 
 	if(g_ScnMgr)
 		delete g_ScnMgr;
