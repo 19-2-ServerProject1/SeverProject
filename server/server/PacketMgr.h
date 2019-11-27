@@ -62,6 +62,7 @@ int make_packet_destroy_item(int idx);
 int make_packet_destroy_player(const int& client);
 int make_packet_hit_player(const int& client, int damage);
 int make_packet_game_end(const int& winner);
+int make_packet_game_start();
 int get_packet_type(const int& packet);
 int get_packet_obj_info(const int& packet);
 int get_packet_obj_type(const int& packet);
