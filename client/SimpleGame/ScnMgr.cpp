@@ -33,13 +33,9 @@ ScnMgr::ScnMgr()
 	state_texture[1] = m_Renderer->GenPngTexture("./Textures/connect.png");
 	state_texture[2] = m_Renderer->GenPngTexture("./Textures/connect_error.png");
 	state_texture[3] = m_Renderer->GenPngTexture("./Textures/wait.png");
-
-
-	//Add Background
-	m_background = new Object();
-	m_background->SetPos(0, 0);
-	m_background->SetVol(m_Width / 100, m_Height / 100);
-	m_background->SetTex(textures[0]);
+	item_texture[0] = m_Renderer->GenPngTexture("./Textures/item1.png");
+	item_texture[1] = m_Renderer->GenPngTexture("./Textures/item2.png");
+	item_texture[2] = m_Renderer->GenPngTexture("./Textures/item3.png");
 
 	//Add Unvisible Wall
 	m_wall[0] = new Object();
@@ -54,6 +50,34 @@ ScnMgr::ScnMgr()
 	m_wall[3] = new Object();
 	m_wall[3]->SetPos(0, -(m_Width + m_Height) / 200);
 	m_wall[3]->SetVol(m_Width / 100, m_Width / 100);
+
+	//Add Block
+	float volumn = 0.5f;
+	m_block[0] = new Object();
+	m_block[0]->SetPos(m_Width / 400, 0);
+	m_block[0]->SetVol(volumn, volumn);
+	m_block[1] = new Object();
+	m_block[1]->SetPos(-m_Width / 400, 0);
+	m_block[1]->SetVol(volumn, volumn);
+	m_block[2] = new Object();
+	m_block[2]->SetPos(0, m_Height / 400);
+	m_block[2]->SetVol(volumn, volumn);
+	m_block[3] = new Object();
+	m_block[3]->SetPos(0, -m_Height / 400);
+	m_block[3]->SetVol(volumn, volumn);
+
+	m_block[4] = new Object();
+	m_block[4]->SetPos(m_Width / 400, m_Height / 400 * 2);
+	m_block[4]->SetVol(volumn, volumn);
+	m_block[5] = new Object();
+	m_block[5]->SetPos(-m_Width / 400, m_Height / 400 * 2);
+	m_block[5]->SetVol(volumn, volumn);
+	m_block[6] = new Object();
+	m_block[6]->SetPos(m_Width / 400, -m_Height / 400 * 2);
+	m_block[6]->SetVol(volumn, volumn);
+	m_block[7] = new Object();
+	m_block[7]->SetPos(-m_Width / 400, -m_Height / 400 * 2);
+	m_block[7]->SetVol(volumn, volumn);
 
 	//Add Item
 	m_item[0] = new Item();
@@ -86,6 +110,7 @@ ScnMgr::~ScnMgr()
 
 void ScnMgr::Update(float fTimeElapsed)
 {
+	//플레이어 위치 보간
 	for (auto& p_pair : m_players)
 		p_pair.second.Update(fTimeElapsed);
 }
@@ -106,26 +131,40 @@ void ScnMgr::RenderScene()
 
 	case state_play:
 	case state_end:
-		m_Renderer->DrawTextureRect(m_background->m_pos.x * 100, m_background->m_pos.y * 100, 0, m_background->m_vol.x * 100, m_background->m_vol.y * 100, 0, m_background->m_color[0], m_background->m_color[1], m_background->m_color[2], m_background->m_color[3], m_background->m_texID);
+		//Draw Background
+		m_Renderer->DrawTextureRect(0, 0, 0, 800, 600, 0, 1, 1, 1, 1, textures[0]);
+
+
+		//Draw blocks
+		for (auto& block : m_block)
+			m_Renderer->DrawTextureRect(block->m_pos.x * 100, block->m_pos.y * 100, 0, block->m_vol.x * 100, block->m_vol.y * 100, 0, 1, 1, 1,1, textures[2]);
+
+		//Draw Items
 		for (auto& item : m_item)
 		{
 			if (item->m_visible == false) continue;
-			m_Renderer->DrawTextureRect(item->m_pos.x * 100, item->m_pos.y * 100, 0, item->m_vol.x * 100, item->m_vol.y * 100, 0, item->m_color[0], item->m_color[1], item->m_color[2], item->m_color[3], item->m_texID);
+			m_Renderer->DrawTextureRect(item->m_pos.x * 100, item->m_pos.y * 100, 0, item->m_vol.x * 100, item->m_vol.y * 100, 0, 1, 1, 1, 1, item_texture[item->type]);
 		}
 
 		for (auto& p : m_players) {
 			auto& o = p.second;
 			if (o.m_visible == false) continue;
+			//Draw Bullets
 			for (auto& b : o.bullets)
 			{
 				if (b.m_visible == false) continue;
 				m_Renderer->DrawTextureRect(b.m_pos.x * 100, b.m_pos.y * 100, 0, 5, 5, 0, 1, 1, 1, 1, bullettextures[b.type]);
 			}
+
+			//Draw HP
 			float hp = o.m_hp / 100.0f;
 			m_Renderer->DrawTextureRect(o.m_pos.x * 100, (o.m_pos.y + 0.19) * 100, 0, (o.m_vol.x * 100) * hp, 5, 0, o.m_color[0], o.m_color[1], o.m_color[2], o.m_color[3], hpbar);
+
+			//Draw Character
 			m_Renderer->DrawTextureRect(o.m_pos.x * 100, o.m_pos.y * 100, 0, o.m_vol.x * 100, -o.m_vol.y * 100, 0, o.m_color[0], o.m_color[1], o.m_color[2], o.m_color[3], textures[1]);
 		}
 
+		//Draw End Title
 		if (m_state == state_end) {
 			if (MYID != winner)
 				m_Renderer->DrawTextureRect(0, 0, 0, m_Width, m_Height, 0, 1, 1, 1, 1, winlose[1]);
@@ -140,8 +179,6 @@ void ScnMgr::RenderScene()
 
 void ScnMgr::Init() {
 	m_players.clear();
-	for (auto& item : m_item)
-		item->m_visible = true;
 }
 
 void ScnMgr::KeyDownInput(unsigned char key, int x, int y)
@@ -188,44 +225,6 @@ void ScnMgr::KeyUpInput(unsigned char key, int x, int y)
 		}
 		if (packet != -1)
 			send(soc, (const char*)&packet, sizeof(int), 0);
-	}
-}
-void ScnMgr::SpecialKeyDownInput(unsigned char key, int x, int y)
-{
-	if (key == GLUT_KEY_UP)
-	{
-		m_keyUp = true;
-	}
-	else if (key == GLUT_KEY_DOWN)
-	{
-		m_keyDown = true;
-	}
-	else if (key == GLUT_KEY_LEFT)
-	{
-		m_keyLeft = true;
-	}
-	else if (key == GLUT_KEY_RIGHT)
-	{
-		m_keyRight = true;
-	}
-}
-void ScnMgr::SpecialKeyUpInput(unsigned char key, int x, int y)
-{
-	if (key == GLUT_KEY_UP)
-	{
-		m_keyUp = false;
-	}
-	else if (key == GLUT_KEY_DOWN)
-	{
-		m_keyDown = false;
-	}
-	else if (key == GLUT_KEY_LEFT)
-	{
-		m_keyLeft = false;
-	}
-	else if (key == GLUT_KEY_RIGHT)
-	{
-		m_keyRight = false;
 	}
 }
 void ScnMgr::MouseInput(int button, int state, int x, int y)

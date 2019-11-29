@@ -136,7 +136,7 @@ bool Object::isOverlap(const Object & other)
 //Player
 Player::Player() : Object()
 {
-	m_visible = true;
+	m_visible = false;
 	weapon = 0;
 
 	SetPos(0.0f, 0.0f);
@@ -162,7 +162,7 @@ void Player::Update(float fTimeElapsed)
 
 bool Player::CanShootBullet()
 {
-	return m_remainingBulletCoolTime <= 0.0000001f;
+	return m_remainingBulletCoolTime <= FLT_EPSILON;
 }
 
 void Player::ResetShootBulletCoolTime()

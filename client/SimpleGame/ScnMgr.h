@@ -21,8 +21,8 @@ public:
 	int m_state;
 
 	Renderer *m_Renderer = NULL;
-	Object* m_background = NULL;
 	Object* m_wall[4];
+	Object* m_block[8];
 	Item* m_item[4];
 	map<int, Player> m_players;
 
@@ -31,6 +31,7 @@ public:
 	int winlose[2];
 	int hpbar;
 	int state_texture[4];
+	int item_texture[3];
 
 	//Key Inputs
 	bool m_keyW = false;
@@ -38,18 +39,11 @@ public:
 	bool m_keyS = false;
 	bool m_keyD = false;
 
-	//Special Key Inputs
-	bool m_keyUp = false;
-	bool m_keyDown = false;
-	bool m_keyLeft = false;
-	bool m_keyRight = false;
-
 	//Mouse Input
 	bool m_mouseLeft = false;
 	Vector2d m_mousepos;
 
 	void DoGarbageCollection();
-
 
 	ScnMgr();
 	~ScnMgr();
@@ -61,8 +55,6 @@ public:
 	// Input
 	void KeyDownInput(unsigned char key, int x, int y);
 	void KeyUpInput(unsigned char key, int x, int y);
-	void SpecialKeyDownInput(unsigned char key, int x, int y);
-	void SpecialKeyUpInput(unsigned char key, int x, int y);
 	void MouseInput(int button, int state, int x, int y);
 	void MouseMotion(int x, int y);
 };
