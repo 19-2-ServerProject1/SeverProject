@@ -23,7 +23,9 @@ public:
 	Renderer *m_Renderer = NULL;
 	Object* m_wall[4];
 	Object* m_block[8];
-	Item* m_item[4];
+	//map<int, Object> m_block;
+	//Item* m_item[4];
+	map<int, Item> m_item;
 	map<int, Player> m_players;
 
 	int textures[4];
