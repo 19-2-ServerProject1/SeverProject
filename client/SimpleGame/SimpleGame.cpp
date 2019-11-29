@@ -90,8 +90,13 @@ void ProcessObjectPacket(const int& packet, queue<Vector2d>& addData) {
 			{
 				case obj_player: {
 					Vector2d Data = addData.front(); addData.pop();
+					if (g_ScnMgr->m_players[mover].m_visible == false) {
+						g_ScnMgr->m_players[mover].m_dst = Data;
+						g_ScnMgr->m_players[mover].m_pos = Data;
+					}
+					else
+						g_ScnMgr->m_players[mover].m_dst = Data;
 					g_ScnMgr->m_players[mover].m_visible = true;
-					g_ScnMgr->m_players[mover].m_dst = Data;
 				}
 					break;
 
@@ -106,6 +111,16 @@ void ProcessObjectPacket(const int& packet, queue<Vector2d>& addData) {
 					g_ScnMgr->m_players[mover].bullets[idx].m_dst = Data;
 				}
 					break;
+
+				case obj_item: {
+					int idx = get_packet_bullet_idx(packet);
+					int type = get_packet_bullet_type(packet);
+					Vector2d Data = addData.front(); addData.pop();
+					g_ScnMgr->m_item[idx]->m_visible = true;
+					g_ScnMgr->m_item[idx]->type = type;
+					g_ScnMgr->m_item[idx]->m_pos = Data;
+				}
+								 break;
 			}	
 	}
 	break;
@@ -277,21 +292,13 @@ void KeyDownInput(unsigned char key, int x, int y)
 
 	case ScnMgr::state_end: {
 		g_ScnMgr->m_state = ScnMgr::state_title;
+		break;
 	}
 	}
 }
 void KeyUpInput(unsigned char key, int x, int y)
 {
 	g_ScnMgr->KeyUpInput(key, x, y);
-}
-
-void SpecialKeyDownInput(int key, int x, int y)
-{
-	g_ScnMgr->SpecialKeyDownInput(key, x, y);
-}
-void SpecialKeyUpInput(int key, int x, int y)
-{
-	g_ScnMgr->SpecialKeyUpInput(key, x, y);
 }
 
 int main(int argc, char **argv)
@@ -344,4 +351,3 @@ int main(int argc, char **argv)
 	WSACleanup();
     return 0;
 }
-

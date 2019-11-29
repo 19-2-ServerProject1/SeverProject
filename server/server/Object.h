@@ -86,6 +86,7 @@ private:
 
 public:
 	int m_id;
+	bool m_isConnect = false;
 	int match_round = -1;
 	int m_hp = 100;
 	int weapon = 0;
@@ -120,6 +121,7 @@ public:
 	}
 	void die() {
 		m_visible = false;
+		m_isConnect = false;
 		for (auto& b : bullets)
 			b.m_visible = false;
 	}

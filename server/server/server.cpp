@@ -47,8 +47,10 @@ bool isEnd = false;
 int m_Width = WINDOW_WIDTH;
 int m_Height = WINDOW_HEIGHT;
 Object* m_wall[4];
+Object* m_block[8];
 Item* m_item[MAX_ITEM];
 map<int, Player> PlayerList;
+Vector2d Initialpos[3]{ {-3, -1.5}, {+3, -1.5},{0, 1.5} };
 
 //Error Handler
 void err_quit(const char* msg);
@@ -86,6 +88,20 @@ void send_packet_bullet_pos(const Player& client, const Player& shooter, const i
 
 	send(client.m_socket, (const char*)& packet, sizeof(int), 0);
 	send(client.m_socket, (const char*)& shooter.bullets[idx].m_pos, sizeof(Vector2d), 0);
+}
+void send_packet_item_pos(const Player& client, const int& idx)
+{
+	int packet = 0;
+	int item_type = m_item[idx]->type << 24;
+
+	pTurnOn(packet, p_obj);
+	pTurnOn(packet, idx);
+	pTurnOn(packet, item_type);
+	pTurnOn(packet, obj_item);
+	pTurnOn(packet, obj_position);
+
+	send(client.m_socket, (const char*)& packet, sizeof(int), 0);
+	send(client.m_socket, (const char*)& m_item[idx]->m_pos, sizeof(Vector2d), 0);
 }
 //Message Process
 void ProcessInputPacket(const int& packet, queue<Vector2d>& addData) {
@@ -151,6 +167,9 @@ void PacketReceiver(SOCKET socket, int id)
 						idQueue.emplace(id);
 						idlock.unlock();
 					}
+			}
+			else {
+				PlayerList[id].m_isConnect = false;
 			}
 			return;
 		}
@@ -239,9 +258,96 @@ void SendGameState() {
 }
 
 //Scene Process
-void Initialize();
-void Update(float fTimeElapsed);
-void DoGarbageCollection();
+void Initialize()
+{
+	int count = 0;
+	for (auto& p_pair : PlayerList)
+		p_pair.second.m_pos = Initialpos[count++];
+
+	//Add Unvisible Wall
+	m_wall[0] = new Object();
+	m_wall[0]->SetPos((m_Width + m_Height) / 200, 0);
+	m_wall[0]->SetVol(m_Height / 100, m_Height / 100);
+	m_wall[1] = new Object();
+	m_wall[1]->SetPos(-(m_Width + m_Height) / 200, 0);
+	m_wall[1]->SetVol(m_Height / 100, m_Height / 100);
+	m_wall[2] = new Object();
+	m_wall[2]->SetPos(0, (m_Width + m_Height) / 200);
+	m_wall[2]->SetVol(m_Width / 100, m_Width / 100);
+	m_wall[3] = new Object();
+	m_wall[3]->SetPos(0, -(m_Width + m_Height) / 200);
+	m_wall[3]->SetVol(m_Width / 100, m_Width / 100);
+
+	//Add Block
+	float volumn = 0.5f;
+	m_block[0] = new Object();
+	m_block[0]->SetPos(m_Width / 400, 0);
+	m_block[0]->SetVol(volumn, volumn);
+	m_block[1] = new Object();
+	m_block[1]->SetPos(-m_Width / 400, 0);
+	m_block[1]->SetVol(volumn, volumn);
+	m_block[2] = new Object();
+	m_block[2]->SetPos(0, m_Height / 400);
+	m_block[2]->SetVol(volumn, volumn);
+	m_block[3] = new Object();
+	m_block[3]->SetPos(0, -m_Height / 400);
+	m_block[3]->SetVol(volumn, volumn);
+
+	m_block[4] = new Object();
+	m_block[4]->SetPos(m_Width / 400, m_Height / 400 * 2);
+	m_block[4]->SetVol(volumn, volumn);
+	m_block[5] = new Object();
+	m_block[5]->SetPos(-m_Width / 400, m_Height / 400 * 2);
+	m_block[5]->SetVol(volumn, volumn);
+	m_block[6] = new Object();
+	m_block[6]->SetPos(m_Width / 400, -m_Height / 400 * 2);
+	m_block[6]->SetVol(volumn, volumn);
+	m_block[7] = new Object();
+	m_block[7]->SetPos(-m_Width / 400, -m_Height / 400 * 2);
+	m_block[7]->SetVol(volumn, volumn);
+
+	//Add Item
+	m_item[0] = new Item();
+	m_item[0]->SetPos(m_Width / 400, m_Height / 400);
+	m_item[0]->SetVol(0.2f, 0.2f);
+	m_item[0]->m_visible = true;
+	m_item[1] = new Item();
+	m_item[1]->SetPos(m_Width / 400, -m_Height / 400);
+	m_item[1]->SetVol(0.2f, 0.2f);
+	m_item[1]->m_visible = true;
+	m_item[2] = new Item();
+	m_item[2]->SetPos(-m_Width / 400, -m_Height / 400);
+	m_item[2]->SetVol(0.2f, 0.2f);
+	m_item[2]->m_visible = true;
+	m_item[3] = new Item();
+	m_item[3]->SetPos(-m_Width / 400, m_Height / 400);
+	m_item[3]->SetVol(0.2f, 0.2f);
+	m_item[3]->m_visible = true;
+
+	//아이템 위치 전송
+	for (auto& p_pair : PlayerList)
+		for (int i = 0; i < 4; i++)
+			send_packet_item_pos(p_pair.second, i);
+}
+void DoGarbageCollection()
+{
+	//delete bullets
+	for (auto& p_pair : PlayerList)
+	{
+		auto& player = p_pair.second;
+		if (player.m_visible == false) continue;
+
+		for (int i = 0; i < MAX_BULLET; ++i)
+		{
+			if (player.bullets[i].m_visible == false) continue;
+			if (player.bullets[i].m_vel.length() < 0.00001f) {
+				player.bullets[i].m_visible = false;
+				int packet = make_packet_destroy_bullet(player.m_id, i);
+				SendQueue.emplace_back(packet);
+			}
+		}
+	}
+}
 void DeleteObjects() {
 	for (int i = 0; i < 4; i++) {
 		delete m_wall[i];
@@ -251,17 +357,127 @@ void DeleteObjects() {
 		delete m_item[i];
 		m_item[i] = NULL;
 	}
+
+	for (int i = 0; i < 8; i++) {
+		delete m_block[i];
+		m_block[i] = NULL;
+	}
 }
+void Update(float fTimeElapsed)
+{
+	//플레이어 업데이트
+	for (auto& p_player : PlayerList)
+	{
+		auto& player = p_player.second;
+		//Move Player
+		player.keyMove(fTimeElapsed);
+		//총알 발사
+		if (player.m_mouseLeft == true && player.CanShootBullet()) {
+			player.ShootBullet(player.m_mousepos);
+		}
+		player.Update(fTimeElapsed);
+	}
+
+	//Collision Detect
+	for (auto& p_pair : PlayerList)
+	{
+		if (p_pair.second.m_visible == false) continue;
+		auto& player = p_pair.second;
+
+		//플레이어, 벽 체크
+		for (auto& wall : m_wall)
+		{
+			if (player.isOverlap(*wall)) {
+				player.correctpos(*wall);
+			}
+		}
+
+		//플레이어, 장애물 체크
+		for (auto& block : m_block)
+		{
+			if (player.isOverlap(*block)) {
+				player.correctpos(*block);
+			}
+		}
+
+		//플레이어, 아이템 체크
+		for (int i = 0; i < MAX_ITEM; ++i)
+		{
+			if (m_item[i]->m_visible == false) continue;
+			if (player.isOverlap(*m_item[i])) {
+				player.weapon = m_item[i]->type;
+				m_item[i]->m_visible = false;
+				int packet = make_packet_destroy_item(i);
+				SendQueue.emplace_back(packet);
+			}
+		}
+
+		//총알 충돌체크
+		for (int i = 0; i < MAX_BULLET; ++i)
+		{
+			if (player.bullets[i].m_visible == false) continue;
+
+			//총알, 벽체크
+			for (auto& block : m_block)
+			{
+				if (block->isOverlap(player.bullets[i])) {
+					player.bullets[i].m_visible = false;
+					int packet = make_packet_destroy_bullet(player.m_id, i);
+					SendQueue.emplace_back(packet);
+					break;
+				}
+			}
+
+			//총알, 플레이어 체크
+			for (auto& p_other : PlayerList)
+			{
+				if (p_other.second.m_visible == false) continue;
+				if (p_other.first == p_pair.first) continue;
+				if (p_other.second.isOverlap(player.bullets[i])) {
+					player.bullets[i].m_visible = false;
+					int packet = make_packet_destroy_bullet(player.m_id, i);
+					SendQueue.emplace_back(packet);
+					if (p_other.second.getDamage(player.bullets[i])) {
+						//사망처리
+						p_other.second.die();
+						int packet = make_packet_destroy_player(p_other.second.m_id);
+						SendQueue.emplace_back(packet);
+					}
+					else {
+						//데미지처리
+						int packet = make_packet_hit_player(p_other.second.m_id, player.m_damage[player.bullets[i].type]);
+						SendQueue.emplace_back(packet);
+					}
+				}
+			}
+		}
+	}
+
+	//종료 검사
+	int live_count = 0;
+	int last_liver = 0;
+	for (auto& p_player : PlayerList) {
+		if (p_player.second.m_isConnect == true) {
+			++live_count;
+			last_liver = p_player.second.m_id;
+		}
+	}
+	if (live_count <= 1) {
+		int packet = make_packet_game_end(last_liver);
+		SendQueue.emplace_back(packet);
+		isEnd = true;
+		return;
+	}
+
+	DoGarbageCollection();
+}
+
 
 int main()
 {
-	idQueue.emplace(player1);
-	idQueue.emplace(player2);
-	idQueue.emplace(player3);
+	int retval;
 	match_round = 0;
 
-
-	int retval;
 	//TCP 소켓 세팅
 	WSADATA wsa;
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
@@ -296,9 +512,16 @@ int main()
 	int addrlen = sizeof(SOCKADDR_IN);
 
 	while (true) {
-		match_round++;
 		cout << "Start Player Accept\n";
+
+		//매치 시작전 초기화
+		match_round++;
 		PlayerList.clear();
+		while (!idQueue.empty()) idQueue.pop();
+		idQueue.emplace(player1);
+		idQueue.emplace(player2);
+		idQueue.emplace(player3);
+
 		//유저접속 대기
 		state = server_accept;
 		isEnd = false;
@@ -323,6 +546,7 @@ int main()
 			PlayerList[id].match_round = match_round;
 			PlayerList[id].m_id = id;
 			PlayerList[id].m_socket = client_sock;
+			PlayerList[id].m_isConnect = true;
 			PlayerList[id].SetPos(0.0f, 0.0f);
 			PlayerList[id].SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 			PlayerList[id].SetVol(0.3f, 0.3f);
@@ -339,6 +563,7 @@ int main()
 		cout << "All User Connected, Start Match #" << match_round << endl;
 		state = server_play;
 		SendQueue.emplace_back(make_packet_game_start());
+
 		//게임 로직
 		refreshtime = 1.0f / 30.0f;
 		float remain_time = refreshtime;
@@ -361,13 +586,14 @@ int main()
 		//게임 종료처리
 		cout << "Match END | Disconnect All Players\n";
 		DeleteObjects();
+
 		for (auto& p_player : PlayerList) {
-			idQueue.emplace(p_player.second.m_id);
 			closesocket(p_player.second.m_socket);
 		}
-		
+
 		for (thread& t : threads)
-			t.detach();
+			if (t.joinable())
+				t.join();
 		threads.clear();
 	}
 
@@ -403,146 +629,4 @@ void err_display(const char* msg) {
 
 	printf("[%s] %s", msg, (char*)lpMsgBuf);
 	LocalFree(lpMsgBuf);
-}
-
-//Scene Process
-void Initialize()
-{
-	//Add Unvisible Wall
-	m_wall[0] = new Object();
-	m_wall[0]->SetPos((m_Width + m_Height) / 200, 0);
-	m_wall[0]->SetVol(m_Height / 100, m_Height / 100);
-	m_wall[1] = new Object();
-	m_wall[1]->SetPos(-(m_Width + m_Height) / 200, 0);
-	m_wall[1]->SetVol(m_Height / 100, m_Height / 100);
-	m_wall[2] = new Object();
-	m_wall[2]->SetPos(0, (m_Width + m_Height) / 200);
-	m_wall[2]->SetVol(m_Width / 100, m_Width / 100);
-	m_wall[3] = new Object();
-	m_wall[3]->SetPos(0, -(m_Width + m_Height) / 200);
-	m_wall[3]->SetVol(m_Width / 100, m_Width / 100);
-
-	//Add Item
-	m_item[0] = new Item();
-	m_item[0]->SetPos(m_Width / 400, m_Height / 400);
-	m_item[0]->SetVol(0.2f, 0.2f);
-	m_item[0]->m_visible = true;
-	m_item[1] = new Item();
-	m_item[1]->SetPos(m_Width / 400, -m_Height / 400);
-	m_item[1]->SetVol(0.2f, 0.2f);
-	m_item[1]->m_visible = true;
-	m_item[2] = new Item();
-	m_item[2]->SetPos(-m_Width / 400, -m_Height / 400);
-	m_item[2]->SetVol(0.2f, 0.2f);
-	m_item[2]->m_visible = true;
-	m_item[3] = new Item();
-	m_item[3]->SetPos(-m_Width / 400, m_Height / 400);
-	m_item[3]->SetVol(0.2f, 0.2f);
-	m_item[3]->m_visible = true;
-}
-void Update(float fTimeElapsed)
-{
-	//플레이어 업데이트
-	for (auto& p_player : PlayerList)
-	{
-		auto& player = p_player.second;
-		//Move Player
-		player.keyMove(fTimeElapsed);
-		//총알 발사
-		if (player.m_mouseLeft == true && player.CanShootBullet()) {
-			player.ShootBullet(player.m_mousepos);
-		}
-		player.Update(fTimeElapsed);
-	}
-
-	//Collision Detect
-	for (auto& p_pair : PlayerList)
-	{
-		if (p_pair.second.m_visible == false) continue;
-		auto& player = p_pair.second;
-
-		//플레이어, 벽 체크
-		for (auto& wall : m_wall)
-		{
-			if (player.isOverlap(*wall)) {
-				player.correctpos(*wall);
-			}
-		}
-
-		//플레이어, 아이템 체크
-		for (int i=0;i<MAX_ITEM;++i)
-		{
-			if (m_item[i]->m_visible == false) continue;
-			if (player.isOverlap(*m_item[i])) {
-				player.weapon = m_item[i]->type;
-				m_item[i]->m_visible = false;
-				int packet = make_packet_destroy_item(i);
-				SendQueue.emplace_back(packet);
-			}
-		}
-
-		//총알, 플레이어 체크
-		for (int i=0;i<MAX_BULLET;++i)
-		{
-			if (player.bullets[i].m_visible == false) continue;
-			for (auto& p_other : PlayerList)
-			{
-				if (p_other.second.m_visible == false) continue;
-				if (p_other.first == p_pair.first) continue;
-				if (p_other.second.isOverlap(player.bullets[i])) {
-					player.bullets[i].m_visible = false;
-					int packet = make_packet_destroy_bullet(player.m_id, i);
-					SendQueue.emplace_back(packet);
-					if (p_other.second.getDamage(player.bullets[i])) {
-						//사망처리
-						p_other.second.die();
-						int packet = make_packet_destroy_player(p_other.second.m_id);
-						SendQueue.emplace_back(packet);
-					}
-					else {
-						//데미지처리
-						int packet = make_packet_hit_player(p_other.second.m_id, player.m_damage[player.bullets[i].type]);
-						SendQueue.emplace_back(packet);
-					}
-				}
-			}
-		}
-	}
-
-	//종료 검사
-	int live_count = 0;
-	int last_liver = 0;
-	for (auto& p_player : PlayerList) {
-		if (p_player.second.m_visible == true) {
-			++live_count;
-			last_liver = p_player.second.m_id;
-		}
-	}
-	if (live_count <= 1) {
-		int packet = make_packet_game_end(last_liver);
-		SendQueue.emplace_back(packet);
-		isEnd = true;
-		return;
-	}
-
-	DoGarbageCollection();
-}
-void DoGarbageCollection()
-{
-	//delete bullets
-	for (auto& p_pair : PlayerList)
-	{
-		auto& player = p_pair.second;
-		if (player.m_visible == false) continue;
-
-		for (int i=0;i<MAX_BULLET;++i)
-		{
-			if (player.bullets[i].m_visible == false) continue;
-			if (player.bullets[i].m_vel.length() < 0.00001f) {
-				player.bullets[i].m_visible = false;
-				int packet = make_packet_destroy_bullet(player.m_id, i);
-				SendQueue.emplace_back(packet);
-			}
-		}
-	}
 }
