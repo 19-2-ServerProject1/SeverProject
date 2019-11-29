@@ -78,28 +78,6 @@ ScnMgr::ScnMgr()
 	m_block[7] = new Object();
 	m_block[7]->SetPos(-m_Width / 400, -m_Height / 400 * 2);
 	m_block[7]->SetVol(volumn, volumn);
-
-	//Add Item
-	m_item[0] = new Item();
-	m_item[0]->SetPos(m_Width / 400, m_Height / 400);
-	m_item[0]->SetVol(0.2f, 0.2f);
-	m_item[0]->SetTex(textures[3]);
-	m_item[0]->m_visible = true;
-	m_item[1] = new Item();
-	m_item[1]->SetPos(m_Width / 400, -m_Height / 400);
-	m_item[1]->SetVol(0.2f, 0.2f);
-	m_item[1]->SetTex(textures[3]);
-	m_item[1]->m_visible = true;
-	m_item[2] = new Item();
-	m_item[2]->SetPos(-m_Width / 400, -m_Height / 400);
-	m_item[2]->SetVol(0.2f, 0.2f);
-	m_item[2]->SetTex(textures[3]);
-	m_item[2]->m_visible = true;
-	m_item[3] = new Item();
-	m_item[3]->SetPos(-m_Width / 400, m_Height / 400);
-	m_item[3]->SetVol(0.2f, 0.2f);
-	m_item[3]->SetTex(textures[3]);
-	m_item[3]->m_visible = true;
 }
 ScnMgr::~ScnMgr()
 {
@@ -140,10 +118,11 @@ void ScnMgr::RenderScene()
 			m_Renderer->DrawTextureRect(block->m_pos.x * 100, block->m_pos.y * 100, 0, block->m_vol.x * 100, block->m_vol.y * 100, 0, 1, 1, 1,1, textures[2]);
 
 		//Draw Items
-		for (auto& item : m_item)
+		for (auto& p_item : m_item)
 		{
-			if (item->m_visible == false) continue;
-			m_Renderer->DrawTextureRect(item->m_pos.x * 100, item->m_pos.y * 100, 0, item->m_vol.x * 100, item->m_vol.y * 100, 0, 1, 1, 1, 1, item_texture[item->type]);
+			auto& item = p_item.second;
+			if (item.m_visible == false) continue;
+			m_Renderer->DrawTextureRect(item.m_pos.x * 100, item.m_pos.y * 100, 0, 20, 20, 0, 1, 1, 1, 1, item_texture[item.type]);
 		}
 
 		for (auto& p : m_players) {
@@ -179,6 +158,7 @@ void ScnMgr::RenderScene()
 
 void ScnMgr::Init() {
 	m_players.clear();
+	m_item.clear();
 }
 
 void ScnMgr::KeyDownInput(unsigned char key, int x, int y)
@@ -261,7 +241,7 @@ void ScnMgr::DoGarbageCollection()
 		for (auto& b : player.bullets)
 		{
 			if (b.m_visible == false) continue;
-			if (b.m_vel.length() < 0.00001f)
+			if (b.m_vel.length() < FLT_EPSILON)
 				b.m_visible = false;
 		}
 	}

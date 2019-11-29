@@ -116,9 +116,9 @@ void ProcessObjectPacket(const int& packet, queue<Vector2d>& addData) {
 					int idx = get_packet_bullet_idx(packet);
 					int type = get_packet_bullet_type(packet);
 					Vector2d Data = addData.front(); addData.pop();
-					g_ScnMgr->m_item[idx]->m_visible = true;
-					g_ScnMgr->m_item[idx]->type = type;
-					g_ScnMgr->m_item[idx]->m_pos = Data;
+					g_ScnMgr->m_item[idx].m_visible = true;
+					g_ScnMgr->m_item[idx].type = type;
+					g_ScnMgr->m_item[idx].m_pos = Data;
 				}
 								 break;
 			}	
@@ -140,7 +140,7 @@ void ProcessObjectPacket(const int& packet, queue<Vector2d>& addData) {
 
 			case obj_item: {
 				int idx = get_packet_bullet_idx(packet);
-				g_ScnMgr->m_item[idx]->m_visible = false;
+				g_ScnMgr->m_item[idx].m_visible = false;
 				break;
 			}
 		}
