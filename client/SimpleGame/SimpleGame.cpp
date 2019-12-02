@@ -209,11 +209,20 @@ void RenderScene(int temp)
 	g_ScnMgr->Update(eTime / 1000.f);
 	
 	//Scne을 변경하는 건 이곳에서 하면 될 듯
-	if(!g_ScnMgr->Scn_Change)
+	
+	switch (g_ScnMgr->Scn_Num)
+	{
+	case 0:
 		g_ScnMgr->StartScene();
-	else 
+		break;
+	case 1:
 		g_ScnMgr->RenderScene();
-		
+		break;
+	
+	default:
+		break;
+	}
+
 	glutSwapBuffers();
 
 	glutTimerFunc(8, RenderScene, 0);
