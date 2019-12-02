@@ -34,7 +34,7 @@ public:
 	int hpbar;
 
 	//bool
-	bool Scn_Change = false;
+	int Scn_Num = false;
 
 
 	//Key Inputs
@@ -70,6 +70,7 @@ public:
 	void MouseInput(int button, int state, int x, int y);
 	void MouseMotion(int x, int y);
 	
-	//
+	//mouse button을 다운했는지 알아보자
+	bool MouseButton(int mp_x, int mp_y, Object* ID);
 
 };
