@@ -22,6 +22,11 @@ ScnMgr::ScnMgr(int socket, int id)
 	textures[1] = m_Renderer->GenPngTexture("./Textures/player.png");
 	textures[2] = m_Renderer->GenPngTexture("./Textures/block.png");
 	textures[3] = m_Renderer->GenPngTexture("./Textures/mushroom.png");
+	
+	//Button Texture
+	button_textures[0] = m_Renderer->GenPngTexture("./Textures/start_b.png");
+	button_textures[1] = m_Renderer->GenPngTexture("./Textures/exit_b.png");
+
 
 	bullettextures[0] = m_Renderer->GenPngTexture("./Textures/bullet1.png");
 	bullettextures[1] = m_Renderer->GenPngTexture("./Textures/bullet2.png");
@@ -73,6 +78,19 @@ ScnMgr::ScnMgr(int socket, int id)
 	m_item[3]->SetVol(0.2f, 0.2f);
 	m_item[3]->SetTex(textures[3]);
 	m_item[3]->m_visible = true;
+
+	//Start_Button
+	m_Button[0] = new Object();
+	m_Button[0]->SetPos(0, 10);
+	m_Button[0]->SetVol(m_Width / 100, m_Height / 100);
+	m_Button[0]->SetTex(button_textures[0]);
+	
+	
+	//EXIT_Button
+	m_Button[1] = new Object();
+	m_Button[1]->SetPos(0, 20);
+	m_Button[1]->SetVol(m_Width / 100, m_Height / 100);
+	m_Button[1]->SetTex(button_textures[1]);
 
 	//Add Hero Object
 	m_players[MYID] = Player();
@@ -169,6 +187,23 @@ void ScnMgr::Update(float fTimeElapsed)
 	for (auto& p_pair : m_players)
 		p_pair.second.Update(fTimeElapsed);
 }
+
+void ScnMgr::StartScene()
+{
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
+
+	m_Renderer->DrawTextureRect(m_background->m_pos.x * 100, m_background->m_pos.y * 100, 0, m_background->m_vol.x * 100, m_background->m_vol.y * 100, 0, m_background->m_color[0], m_background->m_color[1], m_background->m_color[2], m_background->m_color[3], m_background->m_texID);
+
+	//Start 버튼 만들기
+	m_Renderer->DrawTextureRect(m_Button[0]->m_pos.x * 10, m_Button[0]->m_pos.y * 10, 1, m_Button[0]->m_vol.x * 10 ,-m_Button[0]->m_vol.y * 10, 0, m_Button[0]->m_color[0], m_Button[0]->m_color[1], m_Button[0]->m_color[2], m_Button[0]->m_color[3], m_Button[0]->m_texID);
+	m_Renderer->DrawTextureRect(m_Button[1]->m_pos.x * 10, m_Button[1]->m_pos.y * 10, 1, m_Button[1]->m_vol.x * 10 ,-m_Button[1]->m_vol.y * 10, 0, m_Button[1]->m_color[0], m_Button[1]->m_color[1], m_Button[1]->m_color[2], m_Button[1]->m_color[3], m_Button[1]->m_texID);
+
+	
+}
+
+
+
 void ScnMgr::RenderScene()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
