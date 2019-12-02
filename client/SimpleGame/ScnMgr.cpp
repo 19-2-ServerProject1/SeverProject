@@ -200,6 +200,19 @@ void ScnMgr::StartScene()
 	m_Renderer->DrawTextureRect(m_Button[1]->m_pos.x * 10, m_Button[1]->m_pos.y * 10, 1, m_Button[1]->m_vol.x * 10 ,-m_Button[1]->m_vol.y * 10, 0, m_Button[1]->m_color[0], m_Button[1]->m_color[1], m_Button[1]->m_color[2], m_Button[1]->m_color[3], m_Button[1]->m_texID);
 
 	
+	//버튼이 눌렸는지 확인하기
+	if (m_Button[0]->m_pos.x * 10 - 10  <= m_mousepos.x  && m_mousepos.x <= m_Button[0]->m_pos.x * 10 + 10
+		&& m_Button[0]->m_pos.y * 10 - 10  <= m_mousepos.y  && m_mousepos.y <= m_Button[0]->m_pos.y * 10 + 10)
+	{
+		cout << "버튼 위에 마우스가 갔습니다. \n " << endl;
+		//마우스 커서가 있으면 다음 신으로 넘어가기
+		Scn_Change = true;
+
+	}
+
+	//마우스 커서가 어디에 있는지 확인하자
+	m_Renderer->DrawSolidRect(m_mousepos.x, m_mousepos.y, 10, 5, 1, 0, 0, 0.5);
+
 }
 
 
@@ -337,6 +350,7 @@ void ScnMgr::MouseMotion(int x, int y)
 		m_mousepos.x = x;
 		m_mousepos.y = y;
 	}
+
 }
 
 void ScnMgr::DoGarbageCollection()
