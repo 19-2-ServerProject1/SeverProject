@@ -33,6 +33,10 @@ public:
 	int winlose[2];
 	int hpbar;
 
+	//bool
+	bool Scn_Change = false;
+
+
 	//Key Inputs
 	bool m_keyW = false;
 	bool m_keyA = false;
