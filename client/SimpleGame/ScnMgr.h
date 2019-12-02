@@ -20,8 +20,14 @@ public:
 	Renderer *m_Renderer = NULL;
 	Object* m_background = NULL;
 	Object* m_wall[4];
+	
+	Object* m_Button[4];
+	
 	Item* m_item[4];
 	map<int, Player> m_players;
+	
+	int button_textures[4];
+	
 	int textures[4];
 	int bullettextures[3];
 	int winlose[2];
@@ -51,7 +57,7 @@ public:
 	
 	void Update(float fTimeElapsed);
 	void RenderScene();
-
+	void StartScene();
 	// Input
 	void KeyDownInput(unsigned char key, int x, int y);
 	void KeyUpInput(unsigned char key, int x, int y);

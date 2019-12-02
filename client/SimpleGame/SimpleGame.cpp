@@ -207,7 +207,11 @@ void RenderScene(int temp)
 
 	ProcessPacket();
 	g_ScnMgr->Update(eTime / 1000.f);
-	g_ScnMgr->RenderScene();
+	
+	//Scne을 변경하는 건 이곳에서 하면 될 듯
+
+	g_ScnMgr->StartScene();
+	//g_ScnMgr->RenderScene();
 	glutSwapBuffers();
 
 	glutTimerFunc(8, RenderScene, 0);
@@ -252,6 +256,7 @@ void SpecialKeyUpInput(int key, int x, int y)
 
 int main(int argc, char **argv)
 {
+
 	// Initialize Socket
 	WSADATA wsa;
 	WSAStartup(MAKEWORD(2, 2), &wsa);
