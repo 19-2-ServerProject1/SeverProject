@@ -137,14 +137,17 @@ void ScnMgr::RenderScene()
 	case state_title:
 		//버튼 Layer - 2
 		for (int i = 0; i < 2; ++i) {
-			
-			if ((m_mouseLeft == true) &&
-				(m_button[i]->m_pos.x - m_button[i]->m_vol.x < (m_mousepos.x - 400) && (m_mousepos.x - 400) < m_button[i]->m_pos.x + m_button[i]->m_vol.x) &&
-				(m_button[i]->m_pos.y - m_button[i]->m_vol.y < (-m_mousepos.y + 300) && (-m_mousepos.y + 300) < m_button[i]->m_pos.y + m_button[i]->m_vol.y))
+			//좌표처리만 해결하면 돌아감
+			if ((m_button[i]->m_pos.x - (m_button[i]->m_vol.x / 2) < (m_mousepos.x)) && ((m_mousepos.x) < m_button[i]->m_pos.x + (m_button[i]->m_vol.x / 2)) &&
+			(m_button[i]->m_pos.y - (m_button[i]->m_vol.y / 2) < (m_mousepos.y)) && ((m_mousepos.y) < m_button[i]->m_pos.y + (m_button[i]->m_vol.y / 2)))
 			{
 				cout << "c" << endl;
+			
 				m_Renderer->DrawTextureRect(m_button[i]->m_pos.x, m_button[i]->m_pos.y, 2, m_button[i]->m_vol.x, -m_button[i]->m_vol.y, 0, 1, 1, 1, 1, button[i][1]); //On
-
+				if (i == 0)
+					m_state = state_connect;//Scene 변경하기
+				else
+					exit(0);
 			}
 			else
 			{
@@ -272,7 +275,7 @@ void ScnMgr::KeyUpInput(unsigned char key, int x, int y)
 }
 void ScnMgr::MouseInput(int button, int state, int x, int y)
 {
-	if (m_state == state_play) {
+	if (m_state == state_play || m_state == state_title) {
 		if (button == GLUT_LEFT_BUTTON) {
 			if (state == GLUT_DOWN) {
 				m_mouseLeft = true;
