@@ -1,4 +1,8 @@
 #pragma once
+
+#define EXTEND_PACKET_SIZE 12
+#define GENERAL_PACKET_SIZE 4
+
 class Vector2d;
 
 enum packet_type {
@@ -55,6 +59,9 @@ enum packet_event {
 bool On(const int& p_iflag, int pt);
 void pTurnOn(int& p_iflag, const int pt);
 void pTurnOff(int& p_iflag, const int pt);
+
+bool is_extend_packet_client(const int& packet);
+bool is_extend_packet_server(const int& packet);
 
 int make_packet_input(const int& client, int key);
 int make_packet_destroy_bullet(const int& client, int idx);
