@@ -82,7 +82,7 @@ class Player : public Object
 {
 private:
 	float m_remainingBulletCoolTime = 0.0f;
-	float m_defaultBulletCoolTime[3] = { 0.4f, 0.3f, 0.5f };
+	float m_defaultBulletCoolTime[3] = { 0.1f, 0.075f, 0.125f };
 	int m_damage[3] = { 30, 20, 50 };
 
 public:

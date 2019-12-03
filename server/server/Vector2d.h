@@ -1,5 +1,7 @@
 #pragma once
 #include <iostream>
+#include <cmath>
+#define M_PI 3.14159265358979323846
 
 class Vector2d {
 public:
@@ -18,6 +20,14 @@ public:
 	Vector2d& operator-=(const Vector2d& other) { this->x -= other.x; this->y -= other.y; return *this; };
 	Vector2d& operator*=(const float& value) { this->x *= value; this->y *= value; return *this; };
 	Vector2d& operator/=(const float& value) { this->x /= value; this->y /= value; return *this; };
+	Vector2d& rotate(float degree) {
+		float rad = degree * M_PI / 180.0f;
+		float x = this->x;
+		float y = this->y;
+		this->x = cos(rad)*x - sin(rad)*y;
+		this->y = sin(rad)*x + cos(rad)*y;
+		return *this;
+	}
 	bool operator==(const Vector2d& other) { return (this->x == other.x) && (this->y == other.y); };
 
 	float dot(const Vector2d& other) const { return this->x*other.x + this->y*other.y; };

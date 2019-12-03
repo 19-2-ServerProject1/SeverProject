@@ -78,19 +78,37 @@ ScnMgr::ScnMgr()
 	m_block[7] = new Object();
 	m_block[7]->SetPos(-m_Width / 400, -m_Height / 400 * 2);
 	m_block[7]->SetVol(volumn, volumn);
+
+	for (auto& b : m_commonBullet) {
+		b = new Object();
+		b->m_visible = false;
+	}
 }
 ScnMgr::~ScnMgr()
 {
 	if(m_Renderer)
 		delete m_Renderer;
 	m_Renderer = NULL;
+
+	for (auto& b : m_commonBullet) {
+		delete b;
+	}
 }
 
 void ScnMgr::Update(float fTimeElapsed)
 {
+	for (auto& b : m_commonBullet)
+		b->Update(fTimeElapsed);
+
 	//플레이어 위치 보간
 	for (auto& p_pair : m_players)
 		p_pair.second.Update(fTimeElapsed);
+
+	if (m_mouseLeft && m_players[MYID].CanShootBullet()) {
+		int packet = make_packet_input(MYID, input_Mleft);
+		send(soc, (const char*)& packet, sizeof(int), 0);
+		send(soc, (const char*)& m_mousepos, sizeof(Vector2d), 0);
+	}
 }
 void ScnMgr::RenderScene()
 {
@@ -123,6 +141,12 @@ void ScnMgr::RenderScene()
 			auto& item = p_item.second;
 			if (item.m_visible == false) continue;
 			m_Renderer->DrawTextureRect(item.m_pos.x * 100, item.m_pos.y * 100, 0, 20, 20, 0, 1, 1, 1, 1, item_texture[item.type]);
+		}
+
+		//중립 총알 그리기
+		for (auto& b : m_commonBullet) {
+			if (b->m_visible == false) continue;
+			m_Renderer->DrawTextureRect(b->m_pos.x * 100, b->m_pos.y * 100, 0, 5, 5, 0, 1, 1, 1, 1, bullettextures[0]);
 		}
 
 		for (auto& p : m_players) {
@@ -158,7 +182,9 @@ void ScnMgr::RenderScene()
 
 void ScnMgr::Init() {
 	m_players.clear();
-	m_item.clear();
+	for (auto& b : m_commonBullet) {
+		b->m_visible = false;
+	}
 }
 
 void ScnMgr::KeyDownInput(unsigned char key, int x, int y)
@@ -214,9 +240,6 @@ void ScnMgr::MouseInput(int button, int state, int x, int y)
 			if (state == GLUT_DOWN) {
 				m_mouseLeft = true;
 				m_mousepos.x = x; m_mousepos.y = y;
-				int packet = make_packet_input(MYID, input_Mleft);
-				send(soc, (const char*)&packet, sizeof(int), 0);
-				send(soc, (const char*)&m_mousepos, sizeof(Vector2d), 0);
 			}
 			else if (state == GLUT_UP) m_mouseLeft = false;
 		}

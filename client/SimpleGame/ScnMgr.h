@@ -5,6 +5,8 @@
 #include <random>
 #include <map>
 
+#define COMMON_BULLET_NUM 128
+
 class ScnMgr
 {
 public:
@@ -24,10 +26,12 @@ public:
 	Object* m_wall[4];
 	Object* m_block[8];
 	//map<int, Object> m_block;
-	//Item* m_item[4];
 	map<int, Item> m_item;
 	map<int, Player> m_players;
 
+	Object* m_commonBullet[COMMON_BULLET_NUM];
+
+	//Textures
 	int textures[4];
 	int bullettextures[3];
 	int winlose[2];

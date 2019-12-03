@@ -1,4 +1,5 @@
 #pragma comment(lib, "ws2_32")
+#include <fstream>
 #include <iostream>
 #include <WinSock2.h>
 #include <thread>
@@ -17,12 +18,13 @@ using namespace std;
 #include "PacketMgr.h"
 
 #define SERVERPORT 9000
-#define MAX_PLAYER 2
 #define MAX_BUFFER_SIZE 200
 
 #define CLIENT_EXIT 0
+#define COMMON_BULLET_NUM 128
 
 int g_curUser;
+int MAX_PLAYER;
 queue<int> idQueue;
 mutex idlock;
 int match_round;
@@ -36,8 +38,7 @@ vector<thread> threads;
 mutex RecvLock;
 queue<int> RecvQueue;
 queue<Vector2d> RecvAddData;
-list<int> SendQueue;
-list<Vector2d> SendAddData;
+vector<int> SendQueue;
 
 //Scene Value
 enum server_state {server_accept, server_play};
@@ -51,6 +52,61 @@ Object* m_block[8];
 Item* m_item[MAX_ITEM];
 map<int, Player> PlayerList;
 Vector2d Initialpos[3]{ {-3, -1.5}, {+3, -1.5},{0, 1.5} };
+
+Bullet m_commonBullet[COMMON_BULLET_NUM];
+int AddBullet(Vector2d pos, Vector2d vol, Vector2d vel, float r, float g, float b, float a, float mass, float fricCoef)
+{
+	int idx = -1;
+	for (int i = 0; i < COMMON_BULLET_NUM; ++i)
+	{
+		if (m_commonBullet[i].m_visible == false)
+		{
+			idx = i;
+			break;
+		}
+	}
+
+	if (idx == -1)
+	{
+		std::cout << "No more remaining object" << std::endl;
+		return idx;
+	}
+
+	m_commonBullet[idx].m_visible = true;
+	m_commonBullet[idx].SetPos(pos);
+	m_commonBullet[idx].SetColor(r, g, b, a);
+	m_commonBullet[idx].SetVol(vol);
+	m_commonBullet[idx].SetVel(vel);
+	m_commonBullet[idx].SetMass(mass);
+	m_commonBullet[idx].SetFriction(fricCoef);
+
+	return idx;
+}
+void ShootBullet(float fTimeElapsed)
+{
+	static float shootTime = 0.05f;
+	static float remainTime = 0.0f;
+	static float rot = 3.0f;
+	static Vector2d m_pos{ 0, 0 };
+	static Vector2d m_dir[4]{ {1, 0},{-1, 0}, {0, 1}, {0, -1} };
+
+	remainTime -= fTimeElapsed;
+	if (remainTime > 0) return;
+
+
+	float fAmountBullet = 8.0f, mass = 1.0f, fricCoef = 0.9f;
+
+	for (auto& dir : m_dir)
+	{
+		dir.rotate(rot);
+		Vector2d hVel = dir * fAmountBullet;
+		Vector2d vol(0.05f, 0.05f);
+		int idx = AddBullet(m_pos, vol, hVel, 1, 0, 0, 1, mass, fricCoef);
+		m_commonBullet[idx].type = 1;
+	}
+
+	remainTime = shootTime;
+}
 
 //Error Handler
 void err_quit(const char* msg);
@@ -74,6 +130,19 @@ void send_packet_player_pos(const Player& client, const Player& mover)
 	send(client.m_socket, (const char*)&packet, sizeof(int), 0);
 	send(client.m_socket, (const char*)&mover.m_pos, sizeof(Vector2d), 0);
 }
+void save_packet_player_pos(const Player& mover, vector<int>& dat)
+{
+	int packet = 0;
+	pTurnOn(packet, p_obj);
+	pTurnOn(packet, mover.m_id);
+	pTurnOn(packet, obj_player);
+	pTurnOn(packet, obj_position);
+
+	int* p_pos = (int*)& mover.m_pos.x;
+	dat.emplace_back(packet);
+	dat.emplace_back(*p_pos++);
+	dat.emplace_back(*p_pos++);
+}
 void send_packet_bullet_pos(const Player& client, const Player& shooter, const int& idx)
 {
 	int packet = 0;
@@ -88,6 +157,51 @@ void send_packet_bullet_pos(const Player& client, const Player& shooter, const i
 
 	send(client.m_socket, (const char*)& packet, sizeof(int), 0);
 	send(client.m_socket, (const char*)& shooter.bullets[idx].m_pos, sizeof(Vector2d), 0);
+}
+void save_packet_bullet_pos(const Player& shooter, const int& idx, vector<int>& dat)
+{
+	int packet = 0;
+	int bullet_type = shooter.bullets[idx].type << 24;
+
+	pTurnOn(packet, p_obj);
+	pTurnOn(packet, shooter.m_id);
+	pTurnOn(packet, idx);
+	pTurnOn(packet, bullet_type);
+	pTurnOn(packet, obj_bullet);
+	pTurnOn(packet, obj_position);
+
+	int* p_pos = (int *)&shooter.bullets[idx].m_pos.x;
+	dat.emplace_back(packet);
+	dat.emplace_back(*p_pos++);
+	dat.emplace_back(*p_pos++);
+}
+void send_packet_bullet_pos(const Player& client, const int& shooter_id, const int& idx)
+{
+	int packet = 0;
+
+	pTurnOn(packet, p_obj);
+	pTurnOn(packet, shooter_id);
+	pTurnOn(packet, idx);
+	pTurnOn(packet, obj_bullet);
+	pTurnOn(packet, obj_position);
+
+	send(client.m_socket, (const char*)& packet, sizeof(int), 0);
+	send(client.m_socket, (const char*)& m_commonBullet[idx].m_pos, sizeof(Vector2d), 0);
+}
+void save_packet_bullet_pos(const int& shooter_id, const int& idx, vector<int>& dat)
+{
+	int packet = 0;
+
+	pTurnOn(packet, p_obj);
+	pTurnOn(packet, shooter_id);
+	pTurnOn(packet, idx);
+	pTurnOn(packet, obj_bullet);
+	pTurnOn(packet, obj_position);
+
+	int* p_pos = (int*)& m_commonBullet[idx].m_pos.x;
+	dat.emplace_back(packet);
+	dat.emplace_back(*p_pos++);
+	dat.emplace_back(*p_pos++);
 }
 void send_packet_item_pos(const Player& client, const int& idx)
 {
@@ -146,51 +260,84 @@ void ProcessInputPacket(const int& packet, queue<Vector2d>& addData) {
 void PacketReceiver(SOCKET socket, int id)
 {
 	int retval;
-	int packet = 0;
-	char buffer[MAX_BUFFER_SIZE];
-	bool isAdd = false;
-	Vector2d addData;
 
-	unsigned char* data = (unsigned char*)buffer;
+	size_t need_size = GENERAL_PACKET_SIZE;
+	size_t saved_size = 0;
+
+	int packet = 0;
+	Vector2d addData;
+	char buffer[MAX_BUFFER_SIZE];
+	char savedPacket[EXTEND_PACKET_SIZE];
+	char* buf_pos = NULL;
+
+	queue<int> tempQueue;
+	queue<Vector2d> tempAddQueue;
+
 	while (true) {
-		isAdd = false;
-		retval = recv(socket, buffer, sizeof(int), 0);
-		if (retval == CLIENT_EXIT || retval == SOCKET_ERROR)
+		retval = recv(socket, buffer, MAX_BUFFER_SIZE, 0);
+		if (retval == 0 || retval == SOCKET_ERROR)
 		{
 			closesocket(socket);
 			cout << "PLAYER EXIT : " << socket << endl;
 			if (state == server_accept) {
-				if(PlayerList.count(id) != 0)
-					if (PlayerList[id].match_round == match_round) {
-						idlock.lock();
-						g_curUser--;
-						idQueue.emplace(id);
-						idlock.unlock();
-					}
+				idlock.lock();
+				g_curUser--;
+				idQueue.emplace(id);
+				idlock.unlock();
 			}
 			else {
 				PlayerList[id].m_isConnect = false;
 			}
 			return;
 		}
-		memcpy(&packet, buffer, sizeof(int));
 
-		int packet_type = get_packet_type(packet);
-		switch (packet_type)
+		buf_pos = buffer;
+		while (retval > 0)
 		{
-		case p_input:
-			int packet_input = get_packet_input(packet);
-			if (packet_input == input_Mleft) {
-				isAdd = true;
-				recv(socket, (char*)& addData, sizeof(addData), 0);
+			if (retval + saved_size >= need_size) {
+				int copy_size = (need_size - saved_size);
+				memcpy(savedPacket + saved_size, buf_pos, copy_size);
+				buf_pos += copy_size;
+				retval -= copy_size;
+
+				switch (need_size) {
+				case GENERAL_PACKET_SIZE:
+					packet = *(int*)savedPacket;
+					if (is_extend_packet_server(packet)) {
+						need_size = EXTEND_PACKET_SIZE;
+						saved_size = GENERAL_PACKET_SIZE;
+						continue;
+					}
+					need_size = GENERAL_PACKET_SIZE;
+					tempQueue.emplace(packet);
+					break;
+
+				case EXTEND_PACKET_SIZE:
+					packet = *(int*)savedPacket;
+					addData = *(Vector2d*)(savedPacket + GENERAL_PACKET_SIZE);
+					tempQueue.emplace(packet);
+					tempAddQueue.emplace(addData);
+					need_size = GENERAL_PACKET_SIZE;
+					break;
+				}
+				saved_size = 0;
 			}
-			break;
-		};
+			else {
+				memcpy(savedPacket + saved_size, buf_pos, retval);
+				saved_size += retval;
+				retval = 0;
+			}
+		}
 
 		RecvLock.lock();
-		RecvQueue.emplace(packet);
-		if (isAdd)
-			RecvAddData.emplace(addData);
+		while (tempQueue.empty() != true) {
+			RecvQueue.emplace(tempQueue.front());
+			tempQueue.pop();
+		}
+		while (tempAddQueue.empty() != true) {
+			RecvAddData.emplace(tempAddQueue.front());
+			tempAddQueue.pop();
+		}
 		RecvLock.unlock();
 	}
 }
@@ -235,25 +382,27 @@ void ProcessPacket() {
 	}
 }
 void SendGameState() {
-	for (auto& p_player : PlayerList) {
-		auto& player = p_player.second;
-
-		if (SendQueue.empty() == false)
-		{
-			for (auto beg = SendQueue.begin(); beg != SendQueue.end(); ++beg)
-				send(player.m_socket, (const char*) & *beg, sizeof(int), 0);
-		}
-
-		for (auto& p_other_player : PlayerList)
-		{
-			auto& other_player = p_other_player.second;
-			if (other_player.m_visible == false) continue;
-			send_packet_player_pos(player, other_player);
-			for (int i = 0; i < MAX_BULLET; ++i)
-				if (other_player.bullets[i].m_visible)
-					send_packet_bullet_pos(player, other_player, i);
-		}
+	for (auto& p_other_player : PlayerList)
+	{
+		auto& other_player = p_other_player.second;
+		if (other_player.m_visible == false) continue;
+		save_packet_player_pos(other_player, SendQueue);
+		for (int i = 0; i < MAX_BULLET; ++i)
+			if (other_player.bullets[i].m_visible)
+				save_packet_bullet_pos(other_player, i, SendQueue);
 	}
+
+	for (int i = 0; i < COMMON_BULLET_NUM; ++i) {
+		if (m_commonBullet[i].m_visible)
+			save_packet_bullet_pos(player4, i, SendQueue);
+	}
+
+	for (auto& p_player : PlayerList)
+	{
+		if(p_player.second.m_isConnect == true)
+			send(p_player.second.m_socket, (const char*)SendQueue.data(), SendQueue.size() * sizeof(int), 0);
+	}
+
 	SendQueue.clear();
 }
 
@@ -328,6 +477,9 @@ void Initialize()
 	for (auto& p_pair : PlayerList)
 		for (int i = 0; i < 4; i++)
 			send_packet_item_pos(p_pair.second, i);
+
+	for (auto& bullet : m_commonBullet)
+		bullet.m_visible = false;
 }
 void DoGarbageCollection()
 {
@@ -345,6 +497,16 @@ void DoGarbageCollection()
 				int packet = make_packet_destroy_bullet(player.m_id, i);
 				SendQueue.emplace_back(packet);
 			}
+		}
+	}
+
+	for (int i=0;i<100;++i)
+	{
+		if (m_commonBullet[i].m_visible == false) continue;
+		if (m_commonBullet[i].m_vel.length() < 0.00001f) {
+			m_commonBullet[i].m_visible = false;
+			int packet = make_packet_destroy_bullet(player4, i);
+			SendQueue.emplace_back(packet);
 		}
 	}
 }
@@ -377,6 +539,10 @@ void Update(float fTimeElapsed)
 		}
 		player.Update(fTimeElapsed);
 	}
+
+	ShootBullet(fTimeElapsed);
+	for (auto& b : m_commonBullet)
+		b.Update(fTimeElapsed);
 
 	//Collision Detect
 	for (auto& p_pair : PlayerList)
@@ -451,17 +617,58 @@ void Update(float fTimeElapsed)
 				}
 			}
 		}
+
+		//중립총알 체크
+		for (int i = 0; i < COMMON_BULLET_NUM; i++)
+		{
+			if (m_commonBullet[i].m_visible == false) continue;
+			//총알, 벽체크
+			for (auto& block : m_block)
+			{
+				if (block->isOverlap(m_commonBullet[i])) {
+					m_commonBullet[i].m_visible = false;
+					int packet = make_packet_destroy_bullet(player4, i);
+					SendQueue.emplace_back(packet);
+					break;
+				}
+			}
+
+			//총알, 플레이어 체크
+			for (auto& p_other : PlayerList)
+			{
+				if (p_other.second.m_visible == false) continue;
+				if (p_other.second.isOverlap(m_commonBullet[i])) {
+					m_commonBullet[i].m_visible = false;
+					int packet = make_packet_destroy_bullet(player4, i);
+					SendQueue.emplace_back(packet);
+					if (p_other.second.getDamage(1)) {
+						//사망처리
+						p_other.second.die();
+						int packet = make_packet_destroy_player(p_other.second.m_id);
+						SendQueue.emplace_back(packet);
+					}
+					else {
+						//데미지처리
+						int packet = make_packet_hit_player(p_other.second.m_id, 1);
+						SendQueue.emplace_back(packet);
+					}
+				}
+			}
+
+		}
+
 	}
 
 	//종료 검사
 	int live_count = 0;
 	int last_liver = 0;
 	for (auto& p_player : PlayerList) {
-		if (p_player.second.m_isConnect == true) {
+		if (p_player.second.m_visible == true) {
 			++live_count;
 			last_liver = p_player.second.m_id;
 		}
 	}
+
 	if (live_count <= 1) {
 		int packet = make_packet_game_end(last_liver);
 		SendQueue.emplace_back(packet);
@@ -472,11 +679,14 @@ void Update(float fTimeElapsed)
 	DoGarbageCollection();
 }
 
-
 int main()
 {
-	int retval;
-	match_round = 0;
+	float refreshrate = 0;
+	ifstream in("option.txt");
+	in >> MAX_PLAYER;
+	in >> refreshrate;
+	in.close();
+	refreshtime = 1.0f / refreshrate;
 
 	//TCP 소켓 세팅
 	WSADATA wsa;
@@ -501,7 +711,7 @@ int main()
 	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	serverAddr.sin_port = htons(SERVERPORT);
 
-	retval = ::bind(listen_socket, reinterpret_cast<SOCKADDR*>(&serverAddr), sizeof(SOCKADDR_IN));
+	int retval = ::bind(listen_socket, reinterpret_cast<SOCKADDR*>(&serverAddr), sizeof(SOCKADDR_IN));
 	if (retval == SOCKET_ERROR) err_quit("bind()");
 
 	retval = listen(listen_socket, SOMAXCONN);

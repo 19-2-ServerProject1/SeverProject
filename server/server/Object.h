@@ -81,7 +81,7 @@ class Player : public Object
 {
 private:
 	float m_remainingBulletCoolTime = 0.0f;
-	float m_defaultBulletCoolTime[3] = { 0.4f, 0.3f, 0.5f };
+	float m_defaultBulletCoolTime[3] = { 0.1f, 0.075f, 0.125f };
 	
 
 public:
@@ -119,9 +119,13 @@ public:
 		m_hp -= m_damage[bullet.type];
 		return m_hp <= 0;
 	}
+	bool getDamage(const int& damage)
+	{
+		m_hp -= damage;
+		return m_hp <= 0;
+	}
 	void die() {
 		m_visible = false;
-		m_isConnect = false;
 		for (auto& b : bullets)
 			b.m_visible = false;
 	}
