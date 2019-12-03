@@ -25,6 +25,8 @@ public:
 	Renderer *m_Renderer = NULL;
 	Object* m_wall[4];
 	Object* m_block[8];
+	Object* m_button[4];
+	
 	//map<int, Object> m_block;
 	map<int, Item> m_item;
 	map<int, Player> m_players;
@@ -39,6 +41,10 @@ public:
 	int state_texture[4];
 	int item_texture[3];
 
+	//Button
+	int button[4][2];
+	//0 - Start Button / 1 - Exit Button
+	//1 - On / 0 - Off
 	//Key Inputs
 	bool m_keyW = false;
 	bool m_keyA = false;

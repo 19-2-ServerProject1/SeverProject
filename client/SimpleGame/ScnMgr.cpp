@@ -26,16 +26,23 @@ ScnMgr::ScnMgr()
 	bullettextures[0] = m_Renderer->GenPngTexture("./Textures/bullet1.png");
 	bullettextures[1] = m_Renderer->GenPngTexture("./Textures/bullet2.png");
 	bullettextures[2] = m_Renderer->GenPngTexture("./Textures/bullet3.png");
-	winlose[0] = m_Renderer->GenPngTexture("./Textures/win.png");
-	winlose[1] = m_Renderer->GenPngTexture("./Textures/lose.png");
+	winlose[0] = m_Renderer->GenPngTexture("./Textures/win_J.png");
+	winlose[1] = m_Renderer->GenPngTexture("./Textures/lose_J.png");
 	hpbar = m_Renderer->GenPngTexture("./Textures/hp.png");
-	state_texture[0] = m_Renderer->GenPngTexture("./Textures/title.png");
-	state_texture[1] = m_Renderer->GenPngTexture("./Textures/connect.png");
-	state_texture[2] = m_Renderer->GenPngTexture("./Textures/connect_error.png");
-	state_texture[3] = m_Renderer->GenPngTexture("./Textures/wait.png");
+	state_texture[0] = m_Renderer->GenPngTexture("./Textures/title_J.png");
+	state_texture[1] = m_Renderer->GenPngTexture("./Textures/connect_J.png");
+	state_texture[2] = m_Renderer->GenPngTexture("./Textures/connect_error_J.png");
+	state_texture[3] = m_Renderer->GenPngTexture("./Textures/wait_J.png");
 	item_texture[0] = m_Renderer->GenPngTexture("./Textures/item1.png");
 	item_texture[1] = m_Renderer->GenPngTexture("./Textures/item2.png");
 	item_texture[2] = m_Renderer->GenPngTexture("./Textures/item3.png");
+
+	//button
+	button[0][0] = m_Renderer->GenPngTexture("./Textures/Start_button.png");
+	button[0][1] = m_Renderer->GenPngTexture("./Textures/On_Start_button.png");
+	
+	button[1][0] = m_Renderer->GenPngTexture("./Textures/Exit_button.png");
+	button[1][1] = m_Renderer->GenPngTexture("./Textures/On_Exit_button.png");
 
 	//Add Unvisible Wall
 	m_wall[0] = new Object();
@@ -79,6 +86,16 @@ ScnMgr::ScnMgr()
 	m_block[7]->SetPos(-m_Width / 400, -m_Height / 400 * 2);
 	m_block[7]->SetVol(volumn, volumn);
 
+	
+	m_button[0] = new Object();
+	m_button[0]->SetPos(180,-50);
+	m_button[0]->SetVol(342/1.5, 87/1.5);
+
+	m_button[1] = new Object();
+	m_button[1]->SetPos(180, m_button[0]->m_pos.y - 87 / 1.5 - 5);
+	m_button[1]->SetVol(342/ 1.5, 87/ 1.5);
+
+
 	for (auto& b : m_commonBullet) {
 		b = new Object();
 		b->m_visible = false;
@@ -118,6 +135,20 @@ void ScnMgr::RenderScene()
 	switch (m_state)
 	{
 	case state_title:
+		//¹öÆ° Layer - 2
+		for (int i = 0; i < 2; ++i) {
+			m_Renderer->DrawTextureRect(m_button[i]->m_pos.x, m_button[i]->m_pos.y, 2, m_button[i]->m_vol.x, -m_button[i]->m_vol.y, 0, 1, 1, 1, 1, button[i][0]);
+			
+			if ((m_mouseLeft == true) &&
+				(m_button[i]->m_pos.x - m_button[i]->m_vol.x < (m_mousepos.x - 400) && (m_mousepos.x - 400) < m_button[i]->m_pos.x + m_button[i]->m_vol.x) &&
+				(m_button[i]->m_pos.y - m_button[i]->m_vol.y < (-m_mousepos.y + 300) && (-m_mousepos.y + 300) < m_button[i]->m_pos.y + m_button[i]->m_vol.y))
+			{
+				cout << "c" << endl;
+			}
+		}
+
+
+
 	case state_connect:
 	case state_connect_error:
 	case state_wait:
