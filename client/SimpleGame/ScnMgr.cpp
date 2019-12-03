@@ -137,13 +137,19 @@ void ScnMgr::RenderScene()
 	case state_title:
 		//¹öÆ° Layer - 2
 		for (int i = 0; i < 2; ++i) {
-			m_Renderer->DrawTextureRect(m_button[i]->m_pos.x, m_button[i]->m_pos.y, 2, m_button[i]->m_vol.x, -m_button[i]->m_vol.y, 0, 1, 1, 1, 1, button[i][0]);
 			
 			if ((m_mouseLeft == true) &&
 				(m_button[i]->m_pos.x - m_button[i]->m_vol.x < (m_mousepos.x - 400) && (m_mousepos.x - 400) < m_button[i]->m_pos.x + m_button[i]->m_vol.x) &&
 				(m_button[i]->m_pos.y - m_button[i]->m_vol.y < (-m_mousepos.y + 300) && (-m_mousepos.y + 300) < m_button[i]->m_pos.y + m_button[i]->m_vol.y))
 			{
 				cout << "c" << endl;
+				m_Renderer->DrawTextureRect(m_button[i]->m_pos.x, m_button[i]->m_pos.y, 2, m_button[i]->m_vol.x, -m_button[i]->m_vol.y, 0, 1, 1, 1, 1, button[i][1]); //On
+
+			}
+			else
+			{
+				m_Renderer->DrawTextureRect(m_button[i]->m_pos.x, m_button[i]->m_pos.y, 2, m_button[i]->m_vol.x, -m_button[i]->m_vol.y, 0, 1, 1, 1, 1, button[i][0]);//oFF
+
 			}
 		}
 
