@@ -11,6 +11,7 @@ but WITHOUT ANY WARRANTY.
 */
 #include "stdafx.h"
 #include <iostream>
+#include <fstream>
 #include "Dependencies\glew.h"
 #include "Dependencies\freeglut.h"
 
@@ -24,12 +25,13 @@ but WITHOUT ANY WARRANTY.
 #include <mutex>
 #include "..\..\server\server\PacketMgr.h"
 
-#define SERVERIP "127.0.0.1"
+
 #define SERVERPORT 9000
-#define MAX_BUFFER_SIZE = 50;
+#define MAX_BUFFER_SIZE 2000
 
 ScnMgr *g_ScnMgr = NULL;
 SOCKET g_socket;
+string SERVERIP;
 int g_PrevTime;
 
 constexpr int WIDTH_BIAS = WINDOW_WIDTH / 2;
@@ -45,35 +47,74 @@ queue<Vector2d> RecvAddData;
 void PacketReceiver(SOCKET socket)
 {
 	int retval;
+	
+	size_t need_size = GENERAL_PACKET_SIZE;
+	size_t saved_size = 0;
+
 	int packet = 0;
-	char buffer[50];
-	char savedPacket[50];
 	Vector2d addData;
-	bool isAdd = false;
-	unsigned char* data = (unsigned char*)buffer;
+	char buffer[MAX_BUFFER_SIZE];
+	char savedPacket[EXTEND_PACKET_SIZE];
+	char* buf_pos = NULL;
+
+	queue<int> tempQueue;
+	queue<Vector2d> tempAddQueue;
 
 	while (true) {
-		isAdd = false;
-		retval = recv(socket, buffer, sizeof(int), 0);
+		retval = recv(socket, buffer, MAX_BUFFER_SIZE, 0);
 		if (retval == 0 || retval == SOCKET_ERROR)
 		{
 			closesocket(socket);
 			return;
 		}
-		memcpy(&packet, buffer, sizeof(int));
-		int packet_type = get_packet_type(packet);
-		if (packet_type == p_obj) {
-			int packet_info = get_packet_obj_info(packet);
-			if (packet_info == obj_position) {
-				isAdd = true;
-				recv(socket, (char*)& addData, sizeof(addData), 0);
+
+		buf_pos = buffer;
+		while (retval > 0)
+		{
+			if (retval + saved_size >= need_size) {
+				int copy_size = (need_size - saved_size);
+				memcpy(savedPacket + saved_size, buf_pos, copy_size);
+				buf_pos += copy_size;
+				retval -= copy_size;
+
+				switch (need_size) {
+				case GENERAL_PACKET_SIZE:
+					packet = *(int*)savedPacket;
+					if (is_extend_packet_client(packet)) {
+						need_size = EXTEND_PACKET_SIZE;
+						saved_size = GENERAL_PACKET_SIZE;
+						continue;
+					}
+					need_size = GENERAL_PACKET_SIZE;
+					tempQueue.emplace(packet);
+					break;
+
+				case EXTEND_PACKET_SIZE:
+					packet = *(int*)savedPacket;
+					addData = *(Vector2d*)(savedPacket + GENERAL_PACKET_SIZE);
+					tempQueue.emplace(packet);
+					tempAddQueue.emplace(addData);
+					need_size = GENERAL_PACKET_SIZE;
+					break;
+				}
+				saved_size = 0;
+			}
+			else {
+				memcpy(savedPacket + saved_size, buf_pos, retval);
+				saved_size += retval;
+				retval = 0;
 			}
 		}
 
 		RecvLock.lock();
-		RecvQueue.emplace(packet);
-		if (isAdd)
-			RecvAddData.emplace(addData);
+		while (tempQueue.empty() != true) {
+			RecvQueue.emplace(tempQueue.front());
+			tempQueue.pop();
+		}
+		while (tempAddQueue.empty() != true) {
+			RecvAddData.emplace(tempAddQueue.front());
+			tempAddQueue.pop();
+		}
 		RecvLock.unlock();
 	}
 }
@@ -101,14 +142,24 @@ void ProcessObjectPacket(const int& packet, queue<Vector2d>& addData) {
 					break;
 
 				case obj_bullet: {
-					int idx = get_packet_bullet_idx(packet);
-					int type = get_packet_bullet_type(packet);
-					Vector2d Data = addData.front(); addData.pop();
-					if (g_ScnMgr->m_players[mover].bullets[idx].m_visible == false)
-						g_ScnMgr->m_players[mover].bullets[idx].m_pos = g_ScnMgr->m_players[mover].m_pos;
-					g_ScnMgr->m_players[mover].bullets[idx].m_visible = true;
-					g_ScnMgr->m_players[mover].bullets[idx].type = type;
-					g_ScnMgr->m_players[mover].bullets[idx].m_dst = Data;
+					if (mover != player4) {
+						int idx = get_packet_bullet_idx(packet);
+						int type = get_packet_bullet_type(packet);
+						Vector2d Data = addData.front(); addData.pop();
+						if (g_ScnMgr->m_players[mover].bullets[idx].m_visible == false)
+							g_ScnMgr->m_players[mover].bullets[idx].m_pos = g_ScnMgr->m_players[mover].m_pos;
+						g_ScnMgr->m_players[mover].bullets[idx].m_visible = true;
+						g_ScnMgr->m_players[mover].bullets[idx].type = type;
+						g_ScnMgr->m_players[mover].bullets[idx].m_dst = Data;
+					}
+					else {
+						int idx = get_packet_bullet_idx(packet);
+						Vector2d Data = addData.front(); addData.pop();
+						if (g_ScnMgr->m_commonBullet[idx]->m_visible == false)
+							g_ScnMgr->m_commonBullet[idx]->m_pos = Data;
+						g_ScnMgr->m_commonBullet[idx]->m_visible = true;
+						g_ScnMgr->m_commonBullet[idx]->m_dst = Data;
+					}
 				}
 					break;
 
@@ -134,7 +185,10 @@ void ProcessObjectPacket(const int& packet, queue<Vector2d>& addData) {
 
 			case obj_bullet: {
 				int idx = get_packet_bullet_idx(packet);
-				g_ScnMgr->m_players[mover].bullets[idx].m_visible = false;
+				if (mover != player4)
+					g_ScnMgr->m_players[mover].bullets[idx].m_visible = false;
+				else
+					g_ScnMgr->m_commonBullet[idx]->m_visible = false;
 				break;
 			}
 
@@ -265,7 +319,7 @@ void KeyDownInput(unsigned char key, int x, int y)
 		SOCKADDR_IN serverAddr;
 		serverAddr.sin_family = AF_INET;
 		serverAddr.sin_port = htons(SERVERPORT);
-		serverAddr.sin_addr.s_addr = inet_addr(SERVERIP);
+		serverAddr.sin_addr.s_addr = inet_addr(SERVERIP.data());
 		g_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		int retval = ::connect(g_socket, (SOCKADDR*)&serverAddr, sizeof(serverAddr));
 		if (retval == SOCKET_ERROR) {
@@ -306,6 +360,10 @@ int main(int argc, char **argv)
 	// Initialize Socket
 	WSADATA wsa;
 	WSAStartup(MAKEWORD(2, 2), &wsa);
+
+	ifstream in("SERVERIP.txt");
+	in >> SERVERIP;
+	in.close();
 
 	// Initialize GL things
 	glutInit(&argc, argv);

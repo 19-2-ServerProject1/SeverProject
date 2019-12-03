@@ -5,6 +5,31 @@ bool On(const int& p_iflag, int pt) { return (p_iflag & pt) == pt; }
 void pTurnOn(int& p_iflag, const int pt) { p_iflag |= pt; }
 void pTurnOff(int& p_iflag, const int pt) { if (On(p_iflag, pt))   p_iflag ^= pt; }
 
+bool is_extend_packet_client(const int& packet)
+{
+	int packet_type = get_packet_type(packet);
+	if (packet_type == p_obj) {
+		int packet_info = get_packet_obj_info(packet);
+		if (packet_info == obj_position)
+			return true;
+	}
+
+	return false;
+}
+
+bool is_extend_packet_server(const int& packet)
+{
+	int packet_type = get_packet_type(packet);
+	if (packet_type == p_input) {
+		int packet_input = get_packet_input(packet);
+		if (packet_input == input_Mleft)
+			return true;
+	}
+
+	return false;
+}
+
+
 int make_packet_input(const int& client, int key) {
 	int packet = 0;
 	pTurnOn(packet, p_input);
