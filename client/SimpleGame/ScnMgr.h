@@ -22,10 +22,16 @@ public:
 	int winner = -1;
 	int m_state;
 
+	
+
 	Renderer *m_Renderer = NULL;
 	Object* m_wall[4];
 	Object* m_block[8];
-	//map<int, Object> m_block;
+	Object* m_button[4];
+
+	Object* m_alive;
+	int alive_count = 2; //0 - 1 alive / 1 - 2 alive / 2 - 3 alive/ 3 - 생존자 수가 3명 이상일때
+
 	map<int, Item> m_item;
 	map<int, Player> m_players;
 
@@ -38,7 +44,13 @@ public:
 	int hpbar;
 	int state_texture[4];
 	int item_texture[3];
+	int alive[4];
 	int message_texture[6];
+
+	//Button
+	int button[4][2];
+	//0 - Start Button / 1 - Exit Button
+	//1 - On / 0 - Off
 
 	//Key Inputs
 	bool m_keyW = false;

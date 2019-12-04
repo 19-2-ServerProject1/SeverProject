@@ -26,13 +26,13 @@ ScnMgr::ScnMgr()
 	bullettextures[0] = m_Renderer->GenPngTexture("./Textures/bullet1.png");
 	bullettextures[1] = m_Renderer->GenPngTexture("./Textures/bullet2.png");
 	bullettextures[2] = m_Renderer->GenPngTexture("./Textures/bullet3.png");
-	winlose[0] = m_Renderer->GenPngTexture("./Textures/win.png");
-	winlose[1] = m_Renderer->GenPngTexture("./Textures/lose.png");
+	winlose[0] = m_Renderer->GenPngTexture("./Textures/win_J.png");
+	winlose[1] = m_Renderer->GenPngTexture("./Textures/lose_J.png");
 	hpbar = m_Renderer->GenPngTexture("./Textures/hp.png");
-	state_texture[0] = m_Renderer->GenPngTexture("./Textures/title.png");
-	state_texture[1] = m_Renderer->GenPngTexture("./Textures/connect.png");
-	state_texture[2] = m_Renderer->GenPngTexture("./Textures/connect_error.png");
-	state_texture[3] = m_Renderer->GenPngTexture("./Textures/wait.png");
+	state_texture[0] = m_Renderer->GenPngTexture("./Textures/title_J.png");
+	state_texture[1] = m_Renderer->GenPngTexture("./Textures/connect_J.png");
+	state_texture[2] = m_Renderer->GenPngTexture("./Textures/connect_error_J.png");
+	state_texture[3] = m_Renderer->GenPngTexture("./Textures/wait_J.png");
 	item_texture[0] = m_Renderer->GenPngTexture("./Textures/item1.png");
 	item_texture[1] = m_Renderer->GenPngTexture("./Textures/item2.png");
 	item_texture[2] = m_Renderer->GenPngTexture("./Textures/item3.png");
@@ -43,6 +43,19 @@ ScnMgr::ScnMgr()
 	message_texture[3] = m_Renderer->GenPngTexture("./Textures/M_SRY.png");
 	message_texture[4] = m_Renderer->GenPngTexture("./Textures/M_STAY.png");
 	message_texture[5] = m_Renderer->GenPngTexture("./Textures/M_HELP.png");
+
+	//button
+	button[0][0] = m_Renderer->GenPngTexture("./Textures/Start_button.png");
+	button[0][1] = m_Renderer->GenPngTexture("./Textures/On_Start_button.png");
+
+	button[1][0] = m_Renderer->GenPngTexture("./Textures/Exit_button.png");
+	button[1][1] = m_Renderer->GenPngTexture("./Textures/On_Exit_button.png");
+
+	//Alive
+	alive[0] = m_Renderer->GenPngTexture("./Textures/alive1.png");
+	alive[1] = m_Renderer->GenPngTexture("./Textures/alive2.png");
+	alive[2] = m_Renderer->GenPngTexture("./Textures/alive3.png");
+	alive[3] = m_Renderer->GenPngTexture("./Textures/alive_many.png");
 
 	//Add Unvisible Wall
 	m_wall[0] = new Object();
@@ -85,6 +98,18 @@ ScnMgr::ScnMgr()
 	m_block[7] = new Object();
 	m_block[7]->SetPos(-m_Width / 400, -m_Height / 400 * 2);
 	m_block[7]->SetVol(volumn, volumn);
+
+	m_button[0] = new Object();
+	m_button[0]->SetPos(180, -50);
+	m_button[0]->SetVol(342 / 1.5, 87 / 1.5);
+
+	m_button[1] = new Object();
+	m_button[1]->SetPos(180, m_button[0]->m_pos.y - 87 / 1.5 - 5);
+	m_button[1]->SetVol(342 / 1.5, 87 / 1.5);
+
+	m_alive = new Object();
+	m_alive->SetPos(300, 200);
+	m_alive->SetVol(234 / 2, 106 / 2);
 
 	for (auto& b : m_commonBullet) {
 		b = new Object();
@@ -134,6 +159,9 @@ void ScnMgr::RenderScene()
 
 	case state_play:
 	case state_end:
+		//UI
+		m_Renderer->DrawTextureRect(m_alive->m_pos.x, m_alive->m_pos.y, 2, m_alive->m_vol.x, -m_alive->m_vol.y, 0, 1, 1, 1, 1, alive[alive_count]); //On
+
 		//Draw Background
 		m_Renderer->DrawTextureRect(0, 0, 0, 800, 600, 0, 1, 1, 1, 1, textures[0]);
 
@@ -181,9 +209,9 @@ void ScnMgr::RenderScene()
 		//Draw End Title
 		if (m_state == state_end) {
 			if (MYID != winner)
-				m_Renderer->DrawTextureRect(0, 0, 0, m_Width, m_Height, 0, 1, 1, 1, 1, winlose[1]);
+				m_Renderer->DrawTextureRect(0, 0, 0, m_Width, -m_Height, 0, 1, 1, 1, 1, winlose[1]);
 			else if (MYID == winner)
-				m_Renderer->DrawTextureRect(0, 0, 0, m_Width, m_Height, 0, 1, 1, 1, 1, winlose[0]);
+				m_Renderer->DrawTextureRect(0, 0, 0, m_Width, -m_Height, 0, 1, 1, 1, 1, winlose[0]);
 		}
 		break;
 	}
@@ -196,6 +224,7 @@ void ScnMgr::Init() {
 	for (auto& b : m_commonBullet) {
 		b->m_visible = false;
 	}
+	alive_count = 2;
 }
 
 void ScnMgr::KeyDownInput(unsigned char key, int x, int y)
@@ -272,7 +301,7 @@ void ScnMgr::KeyUpInput(unsigned char key, int x, int y)
 }
 void ScnMgr::MouseInput(int button, int state, int x, int y)
 {
-	if (m_state == state_play) {
+	if (m_state == state_play || m_state == state_title) {
 		if (button == GLUT_LEFT_BUTTON) {
 			if (state == GLUT_DOWN) {
 				m_mouseLeft = true;
