@@ -169,8 +169,7 @@ void ScnMgr::RenderScene()
 	case state_end:
 		
 		//UI
-
-
+		
 
 		//Draw Background
 		m_Renderer->DrawTextureRect(0, 0, 0, 800, 600, 0, 1, 1, 1, 1, textures[0]);
