@@ -181,6 +181,7 @@ void ProcessObjectPacket(const int& packet, queue<Vector2d>& addData) {
 		{
 			case obj_player:
 				g_ScnMgr->m_players[mover].m_visible = false;
+				g_ScnMgr->alive_count -= 1;
 				break;
 
 			case obj_bullet: {
