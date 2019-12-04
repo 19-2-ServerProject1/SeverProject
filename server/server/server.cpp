@@ -22,6 +22,7 @@ using namespace std;
 
 #define CLIENT_EXIT 0
 #define COMMON_BULLET_NUM 128
+#define COMMON_BULLET_DAMAGE 1
 
 int g_curUser;
 int MAX_PLAYER;
@@ -346,7 +347,6 @@ void ProcessPacket() {
 	}
 }
 
-
 //Game Logic
 void Initialize()
 {
@@ -582,7 +582,7 @@ void Update(float fTimeElapsed)
 					m_commonBullet[i].m_visible = false;
 					int packet = make_packet_destroy_bullet(player4, i);
 					SendQueue.emplace_back(packet);
-					if (p_other.second.getDamage(1)) {
+					if (p_other.second.getDamage(COMMON_BULLET_DAMAGE)) {
 						//荤噶贸府
 						p_other.second.die();
 						int packet = make_packet_destroy_player(p_other.second.m_id);
@@ -590,7 +590,7 @@ void Update(float fTimeElapsed)
 					}
 					else {
 						//单固瘤贸府
-						int packet = make_packet_hit_player(p_other.second.m_id, 1);
+						int packet = make_packet_hit_player(p_other.second.m_id, COMMON_BULLET_DAMAGE);
 						SendQueue.emplace_back(packet);
 					}
 				}
