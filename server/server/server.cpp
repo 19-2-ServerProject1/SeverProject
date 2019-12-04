@@ -119,18 +119,7 @@ void send_packet_player_id(SOCKET client, const int& id)
 	pTurnOn(packet, id);
 	send(client, (const char*)& packet, sizeof(int), 0);
 }
-void send_packet_player_pos(const Player& client, const Player& mover)
-{
-	int packet = 0;
-	pTurnOn(packet, p_obj);
-	pTurnOn(packet, mover.m_id);
-	pTurnOn(packet, obj_player);
-	pTurnOn(packet, obj_position);
-	
-	send(client.m_socket, (const char*)&packet, sizeof(int), 0);
-	send(client.m_socket, (const char*)&mover.m_pos, sizeof(Vector2d), 0);
-}
-void save_packet_player_pos(const Player& mover, vector<int>& dat)
+void reserve_packet_player_pos(const Player& mover, vector<int>& dat)
 {
 	int packet = 0;
 	pTurnOn(packet, p_obj);
@@ -143,22 +132,7 @@ void save_packet_player_pos(const Player& mover, vector<int>& dat)
 	dat.emplace_back(*p_pos++);
 	dat.emplace_back(*p_pos++);
 }
-void send_packet_bullet_pos(const Player& client, const Player& shooter, const int& idx)
-{
-	int packet = 0;
-	int bullet_type = shooter.bullets[idx].type << 24;
-
-	pTurnOn(packet, p_obj);
-	pTurnOn(packet, shooter.m_id);
-	pTurnOn(packet, idx);
-	pTurnOn(packet, bullet_type);
-	pTurnOn(packet, obj_bullet);
-	pTurnOn(packet, obj_position);
-
-	send(client.m_socket, (const char*)& packet, sizeof(int), 0);
-	send(client.m_socket, (const char*)& shooter.bullets[idx].m_pos, sizeof(Vector2d), 0);
-}
-void save_packet_bullet_pos(const Player& shooter, const int& idx, vector<int>& dat)
+void reserve_packet_bullet_pos(const Player& shooter, const int& idx, vector<int>& dat)
 {
 	int packet = 0;
 	int bullet_type = shooter.bullets[idx].type << 24;
@@ -175,20 +149,7 @@ void save_packet_bullet_pos(const Player& shooter, const int& idx, vector<int>& 
 	dat.emplace_back(*p_pos++);
 	dat.emplace_back(*p_pos++);
 }
-void send_packet_bullet_pos(const Player& client, const int& shooter_id, const int& idx)
-{
-	int packet = 0;
-
-	pTurnOn(packet, p_obj);
-	pTurnOn(packet, shooter_id);
-	pTurnOn(packet, idx);
-	pTurnOn(packet, obj_bullet);
-	pTurnOn(packet, obj_position);
-
-	send(client.m_socket, (const char*)& packet, sizeof(int), 0);
-	send(client.m_socket, (const char*)& m_commonBullet[idx].m_pos, sizeof(Vector2d), 0);
-}
-void save_packet_bullet_pos(const int& shooter_id, const int& idx, vector<int>& dat)
+void reserve_packet_common_bullet_pos(const int& shooter_id, const int& idx, vector<int>& dat)
 {
 	int packet = 0;
 
@@ -203,7 +164,7 @@ void save_packet_bullet_pos(const int& shooter_id, const int& idx, vector<int>& 
 	dat.emplace_back(*p_pos++);
 	dat.emplace_back(*p_pos++);
 }
-void send_packet_item_pos(const Player& client, const int& idx)
+void reserve_packet_item_pos(const int& idx, vector<int>& dat)
 {
 	int packet = 0;
 	int item_type = m_item[idx]->type << 24;
@@ -214,9 +175,12 @@ void send_packet_item_pos(const Player& client, const int& idx)
 	pTurnOn(packet, obj_item);
 	pTurnOn(packet, obj_position);
 
-	send(client.m_socket, (const char*)& packet, sizeof(int), 0);
-	send(client.m_socket, (const char*)& m_item[idx]->m_pos, sizeof(Vector2d), 0);
+	int* p_pos = (int*)& m_item[idx]->m_pos.x;
+	dat.emplace_back(packet);
+	dat.emplace_back(*p_pos++);
+	dat.emplace_back(*p_pos++);
 }
+
 //Message Process
 void ProcessInputPacket(const int& packet, queue<Vector2d>& addData) {
 	int sender = get_packet_player_num(packet);
@@ -381,32 +345,9 @@ void ProcessPacket() {
 		}
 	}
 }
-void SendGameState() {
-	for (auto& p_other_player : PlayerList)
-	{
-		auto& other_player = p_other_player.second;
-		if (other_player.m_visible == false) continue;
-		save_packet_player_pos(other_player, SendQueue);
-		for (int i = 0; i < MAX_BULLET; ++i)
-			if (other_player.bullets[i].m_visible)
-				save_packet_bullet_pos(other_player, i, SendQueue);
-	}
 
-	for (int i = 0; i < COMMON_BULLET_NUM; ++i) {
-		if (m_commonBullet[i].m_visible)
-			save_packet_bullet_pos(player4, i, SendQueue);
-	}
 
-	for (auto& p_player : PlayerList)
-	{
-		if(p_player.second.m_isConnect == true)
-			send(p_player.second.m_socket, (const char*)SendQueue.data(), SendQueue.size() * sizeof(int), 0);
-	}
-
-	SendQueue.clear();
-}
-
-//Scene Process
+//Game Logic
 void Initialize()
 {
 	int count = 0;
@@ -475,8 +416,8 @@ void Initialize()
 
 	//아이템 위치 전송
 	for (auto& p_pair : PlayerList)
-		for (int i = 0; i < 4; i++)
-			send_packet_item_pos(p_pair.second, i);
+		for (int i = 0; i < MAX_ITEM; i++)
+			reserve_packet_item_pos(i, SendQueue);
 
 	for (auto& bullet : m_commonBullet)
 		bullet.m_visible = false;
@@ -677,6 +618,30 @@ void Update(float fTimeElapsed)
 	}
 
 	DoGarbageCollection();
+}
+void SendGameState() {
+	for (auto& p_other_player : PlayerList)
+	{
+		auto& other_player = p_other_player.second;
+		if (other_player.m_visible == false) continue;
+		reserve_packet_player_pos(other_player, SendQueue);
+		for (int i = 0; i < MAX_BULLET; ++i)
+			if (other_player.bullets[i].m_visible)
+				reserve_packet_bullet_pos(other_player, i, SendQueue);
+	}
+
+	for (int i = 0; i < COMMON_BULLET_NUM; ++i) {
+		if (m_commonBullet[i].m_visible)
+			reserve_packet_common_bullet_pos(player4, i, SendQueue);
+	}
+
+	for (auto& p_player : PlayerList)
+	{
+		if (p_player.second.m_isConnect == true)
+			send(p_player.second.m_socket, (const char*)SendQueue.data(), SendQueue.size() * sizeof(int), 0);
+	}
+
+	SendQueue.clear();
 }
 
 int main()
