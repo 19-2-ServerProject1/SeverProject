@@ -8,7 +8,6 @@ public:
 
 	int m_type;
 	Vector2d m_pos;
-	Vector2d m_dst;
 	Vector2d m_vel;
 	Vector2d m_acc;
 	Vector2d m_vol;
@@ -67,7 +66,7 @@ public:
 	Bullet() : Object() {};
 	~Bullet(){};
 
-	int type = 0;
+	int type;
 };
 
 class Item : public Object
@@ -83,23 +82,34 @@ class Player : public Object
 private:
 	float m_remainingBulletCoolTime = 0.0f;
 	float m_defaultBulletCoolTime[3] = { 0.1f, 0.075f, 0.125f };
-	int m_damage[3] = { 30, 20, 50 };
+	
 
 public:
+	int m_id;
+	bool m_isConnect = false;
+	int match_round = -1;
 	int m_hp = 100;
 	int weapon = 0;
 	Bullet bullets[100];
 
-	int m_chat = -1;
-	bool m_key[4];
-	bool m_mouse;
+	int m_damage[3] = { 30, 20, 50 };
 
-	float emotion_time = 0.0f;
-	float emotion_duration_time = 2.0f;
+	//Key Inputs
+	bool m_keyW = false;
+	bool m_keyA = false;
+	bool m_keyS = false;
+	bool m_keyD = false;
+
+	//Mouse Input
+	bool m_mouseLeft = false;
+	Vector2d m_mousepos;
+
+	int m_socket;
 
 	Player();
 	~Player();
 	void Update(float fTimeElapsed);
+	void keyMove(float fTimeElapsed);
 	bool CanShootBullet();
 	void ResetShootBulletCoolTime();
 	int AddBullet(Vector2d pos, Vector2d vol, Vector2d vel, float r, float g, float b, float a, float mass, float fricCoef);
@@ -107,6 +117,11 @@ public:
 	bool getDamage(const Bullet& bullet)
 	{
 		m_hp -= m_damage[bullet.type];
+		return m_hp <= 0;
+	}
+	bool getDamage(const int& damage)
+	{
+		m_hp -= damage;
 		return m_hp <= 0;
 	}
 	void die() {

@@ -19,7 +19,6 @@ void Object::InitPhysics()
 	m_type = TYPE_NORMAL;
 
 	m_pos = Vector2d(0, 0);
-	m_dst = Vector2d(0, 0);
 	m_vel = Vector2d(0, 0);
 	m_acc = Vector2d(0, 0);
 	m_vol = Vector2d(0, 0);
@@ -96,17 +95,38 @@ void Object::Update(float fTimeElapsed)
 {
 	if (m_visible == false) return;
 
-	const float bias = 30.0f;
-	Vector2d dir = m_dst - m_pos;
-	float len = dir.length();
-	float spd = len * bias;
-	dir.normalize();
-	dir *= fTimeElapsed * spd;
+	// Apply Friction
+	float velSize = m_vel.length();
+	if (velSize > 0.0f)
+	{
+		Vector2d acc = m_vel;
+		acc.normalize();
+		//Calc friction size
+		float nForce = m_mass * GRAVITY;
+		float frictionSize = nForce * m_friction;
 
-	if (dir.length() > len)
-		dir.normalize() * len;
+		acc *= -frictionSize;
+		acc /= m_mass;
+		Vector2d newVel = m_vel + acc * fTimeElapsed;
 
-	m_pos += dir;
+		if (newVel.x * m_vel.x < 0.f)
+		{
+			m_vel.x = 0;
+		}
+		else
+		{
+			m_vel.x = newVel.x;
+		}
+		if (newVel.y * m_vel.y < 0.f)
+		{
+			m_vel.y = 0;
+		}
+		else
+		{
+			m_vel.y = newVel.y;
+		}
+	}
+	m_pos += m_vel * fTimeElapsed;
 }
 void Object::AddForce(Vector2d force, float fElapsedTime)
 {
@@ -136,16 +156,8 @@ bool Object::isOverlap(const Object & other)
 //Player
 Player::Player() : Object()
 {
-	m_visible = false;
+	m_visible = true;
 	weapon = 0;
-
-	SetPos(0.0f, 0.0f);
-	SetColor(1.0f, 1.0f, 1.0f, 1.0f);
-	SetVol(0.3f, 0.3f);
-	SetVel(0.0f, 0.0f);
-	SetMass(1.0f);
-	SetFriction(0.6f);
-
 	m_remainingBulletCoolTime = m_defaultBulletCoolTime[weapon];
 }
 Player::~Player() {};
@@ -154,16 +166,43 @@ void Player::Update(float fTimeElapsed)
 {
 	// Reduce Bullet Cooltime
 	m_remainingBulletCoolTime -= fTimeElapsed;
-	emotion_time -= fTimeElapsed;
 
 	Object::Update(fTimeElapsed);
 	for (int i = 0; i < MAX_BULLET; ++i)
 		bullets[i].Update(fTimeElapsed);
 }
 
+void Player::keyMove(float fTimeElapsed)
+{
+	Vector2d keyDir(0, 0);
+	if (m_keyW)
+	{
+		keyDir.y += 1.0f;
+	}
+	if (m_keyS)
+	{
+		keyDir.y -= 1.0f;
+	}
+	if (m_keyA)
+	{
+		keyDir.x -= 1.0f;
+	}
+	if (m_keyD)
+	{
+		keyDir.x += 1.0f;
+	}
+	if (keyDir.length() > 0.0000001f)
+	{
+		float fAmount = 10.0f;
+		keyDir.normalize();
+		keyDir *= fAmount;
+		AddForce(keyDir, fTimeElapsed);
+	}
+}
+
 bool Player::CanShootBullet()
 {
-	return m_remainingBulletCoolTime <= FLT_EPSILON;
+	return m_remainingBulletCoolTime <= 0.0000001f;
 }
 
 void Player::ResetShootBulletCoolTime()

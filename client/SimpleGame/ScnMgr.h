@@ -5,18 +5,40 @@
 #include <random>
 #include <map>
 
+#define COMMON_BULLET_NUM 128
+
 class ScnMgr
 {
-private :
+public:
+	enum scn_state {state_title, state_connect, state_connect_error, state_wait, state_play, state_end};
+
 	int m_Width = WINDOW_WIDTH;
 	int m_Height = WINDOW_HEIGHT;
 
+	//NW
 	int soc;
+	int MYID;
+	bool isEnd = false;
+	int winner = -1;
+	int m_state;
 
 	Renderer *m_Renderer = NULL;
-	Object* m_background = NULL;
+	Object* m_wall[4];
+	Object* m_block[8];
+	//map<int, Object> m_block;
+	map<int, Item> m_item;
 	map<int, Player> m_players;
-	int textures[3];
+
+	Object* m_commonBullet[COMMON_BULLET_NUM];
+
+	//Textures
+	int textures[4];
+	int bullettextures[3];
+	int winlose[2];
+	int hpbar;
+	int state_texture[4];
+	int item_texture[3];
+	int message_texture[6];
 
 	//Key Inputs
 	bool m_keyW = false;
@@ -24,34 +46,22 @@ private :
 	bool m_keyS = false;
 	bool m_keyD = false;
 
-	//Special Key Inputs
-	bool m_keyUp = false;
-	bool m_keyDown = false;
-	bool m_keyLeft = false;
-	bool m_keyRight = false;
-
 	//Mouse Input
 	bool m_mouseLeft = false;
 	Vector2d m_mousepos;
 
 	void DoGarbageCollection();
 
-public:
-	ScnMgr(int s);
+	ScnMgr();
 	~ScnMgr();
 	
 	void Update(float fTimeElapsed);
 	void RenderScene();
+	void Init();
 
 	// Input
 	void KeyDownInput(unsigned char key, int x, int y);
 	void KeyUpInput(unsigned char key, int x, int y);
-	void SpecialKeyDownInput(unsigned char key, int x, int y);
-	void SpecialKeyUpInput(unsigned char key, int x, int y);
 	void MouseInput(int button, int state, int x, int y);
 	void MouseMotion(int x, int y);
-
-	// Objects
-	int AddObject(Vector2d pos, Vector2d vol, Vector2d vel, float r, float g, float b, float a, float mass, float fricCoef, int type);
-	void DeleteObject(int idx);
 };
