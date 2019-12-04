@@ -298,7 +298,8 @@ void Idle(void)
 
 void MouseInput(int button, int state, int x, int y)
 {
-	std::cout << "X : " << x << ", Y : " << y << endl;
+	//std::cout << "X : " << x << ", Y : " << y << endl;
+	std::cout << "Scn : X : " << x - WIDTH_BIAS << ", Y : " << -y + HEIGHT_BIAS << endl;
 	g_ScnMgr->MouseInput(button, state, x-WIDTH_BIAS, -y+HEIGHT_BIAS);
 }
 void MouseMotion(int x, int y)
