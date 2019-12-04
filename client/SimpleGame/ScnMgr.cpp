@@ -26,16 +26,29 @@ ScnMgr::ScnMgr()
 	bullettextures[0] = m_Renderer->GenPngTexture("./Textures/bullet1.png");
 	bullettextures[1] = m_Renderer->GenPngTexture("./Textures/bullet2.png");
 	bullettextures[2] = m_Renderer->GenPngTexture("./Textures/bullet3.png");
-	winlose[0] = m_Renderer->GenPngTexture("./Textures/win.png");
-	winlose[1] = m_Renderer->GenPngTexture("./Textures/lose.png");
+	winlose[0] = m_Renderer->GenPngTexture("./Textures/win_J.png");
+	winlose[1] = m_Renderer->GenPngTexture("./Textures/lose_J.png");
 	hpbar = m_Renderer->GenPngTexture("./Textures/hp.png");
-	state_texture[0] = m_Renderer->GenPngTexture("./Textures/title.png");
-	state_texture[1] = m_Renderer->GenPngTexture("./Textures/connect.png");
-	state_texture[2] = m_Renderer->GenPngTexture("./Textures/connect_error.png");
-	state_texture[3] = m_Renderer->GenPngTexture("./Textures/wait.png");
+	state_texture[0] = m_Renderer->GenPngTexture("./Textures/title_J.png");
+	state_texture[1] = m_Renderer->GenPngTexture("./Textures/connect_J.png");
+	state_texture[2] = m_Renderer->GenPngTexture("./Textures/connect_error_J.png");
+	state_texture[3] = m_Renderer->GenPngTexture("./Textures/wait_J.png");
 	item_texture[0] = m_Renderer->GenPngTexture("./Textures/item1.png");
 	item_texture[1] = m_Renderer->GenPngTexture("./Textures/item2.png");
 	item_texture[2] = m_Renderer->GenPngTexture("./Textures/item3.png");
+
+	//button
+	button[0][0] = m_Renderer->GenPngTexture("./Textures/Start_button.png");
+	button[0][1] = m_Renderer->GenPngTexture("./Textures/On_Start_button.png");
+	
+	button[1][0] = m_Renderer->GenPngTexture("./Textures/Exit_button.png");
+	button[1][1] = m_Renderer->GenPngTexture("./Textures/On_Exit_button.png");
+	
+	//Alive
+	alive[0] = m_Renderer->GenPngTexture("./Textures/alive1.png");
+	alive[1] = m_Renderer->GenPngTexture("./Textures/alive2.png");
+	alive[2] = m_Renderer->GenPngTexture("./Textures/alive3.png");
+	alive[3] = m_Renderer->GenPngTexture("./Textures/alive_many.png");
 
 	//Add Unvisible Wall
 	m_wall[0] = new Object();
@@ -79,6 +92,20 @@ ScnMgr::ScnMgr()
 	m_block[7]->SetPos(-m_Width / 400, -m_Height / 400 * 2);
 	m_block[7]->SetVol(volumn, volumn);
 
+	
+	m_button[0] = new Object();
+	m_button[0]->SetPos(180,-50);
+	m_button[0]->SetVol(342/1.5, 87/1.5);
+
+	m_button[1] = new Object();
+	m_button[1]->SetPos(180, m_button[0]->m_pos.y - 87 / 1.5 - 5);
+	m_button[1]->SetVol(342/ 1.5, 87/ 1.5);
+
+	m_alive = new Object();
+	m_alive->SetPos(300, 200);
+	m_alive->SetVol(234/ 2, 106/ 2);
+
+
 	for (auto& b : m_commonBullet) {
 		b = new Object();
 		b->m_visible = false;
@@ -118,6 +145,32 @@ void ScnMgr::RenderScene()
 	switch (m_state)
 	{
 	case state_title:
+		//버튼 Layer - 2
+		
+		m_Renderer->DrawTextureRect(m_alive->m_pos.x, m_alive->m_pos.y, 2, m_alive->m_vol.x, -m_alive->m_vol.y, 0, 1, 1, 1, 1,alive[alive_count]); //On
+
+		for (int i = 0; i < 2; ++i) {
+			//좌표처리만 해결하면 돌아감
+			if ((m_button[i]->m_pos.x - (m_button[i]->m_vol.x / 2) < (m_mousepos.x)) && ((m_mousepos.x) < m_button[i]->m_pos.x + (m_button[i]->m_vol.x / 2)) &&
+			(m_button[i]->m_pos.y - (m_button[i]->m_vol.y / 2) < (m_mousepos.y)) && ((m_mousepos.y) < m_button[i]->m_pos.y + (m_button[i]->m_vol.y / 2)))
+			{
+				cout << "c" << endl;
+			
+				m_Renderer->DrawTextureRect(m_button[i]->m_pos.x, m_button[i]->m_pos.y, 2, m_button[i]->m_vol.x, -m_button[i]->m_vol.y, 0, 1, 1, 1, 1, button[i][1]); //On
+				if (i == 0)
+					m_state = state_connect;//Scene 변경하기
+				else
+					exit(0);
+			}
+			else
+			{
+				m_Renderer->DrawTextureRect(m_button[i]->m_pos.x, m_button[i]->m_pos.y, 2, m_button[i]->m_vol.x, -m_button[i]->m_vol.y, 0, 1, 1, 1, 1, button[i][0]);//oFF
+
+			}
+		}
+
+
+
 	case state_connect:
 	case state_connect_error:
 	case state_wait:
@@ -126,7 +179,12 @@ void ScnMgr::RenderScene()
 
 
 	case state_play:
+
 	case state_end:
+		
+		//UI
+		m_Renderer->DrawTextureRect(m_alive->m_pos.x, m_alive->m_pos.y, 2, m_alive->m_vol.x, -m_alive->m_vol.y, 0, 1, 1, 1, 1, alive[alive_count]); //On
+
 		//Draw Background
 		m_Renderer->DrawTextureRect(0, 0, 0, 800, 600, 0, 1, 1, 1, 1, textures[0]);
 
@@ -165,6 +223,7 @@ void ScnMgr::RenderScene()
 
 			//Draw Character
 			m_Renderer->DrawTextureRect(o.m_pos.x * 100, o.m_pos.y * 100, 0, o.m_vol.x * 100, -o.m_vol.y * 100, 0, o.m_color[0], o.m_color[1], o.m_color[2], o.m_color[3], textures[1]);
+		
 		}
 
 		//Draw End Title
@@ -235,7 +294,7 @@ void ScnMgr::KeyUpInput(unsigned char key, int x, int y)
 }
 void ScnMgr::MouseInput(int button, int state, int x, int y)
 {
-	if (m_state == state_play) {
+	if (m_state == state_play || m_state == state_title) {
 		if (button == GLUT_LEFT_BUTTON) {
 			if (state == GLUT_DOWN) {
 				m_mouseLeft = true;
