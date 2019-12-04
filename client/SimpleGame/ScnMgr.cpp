@@ -43,6 +43,12 @@ ScnMgr::ScnMgr()
 	
 	button[1][0] = m_Renderer->GenPngTexture("./Textures/Exit_button.png");
 	button[1][1] = m_Renderer->GenPngTexture("./Textures/On_Exit_button.png");
+	
+	//Alive
+	alive[0] = m_Renderer->GenPngTexture("./Textures/alive1.png");
+	alive[1] = m_Renderer->GenPngTexture("./Textures/alive2.png");
+	alive[2] = m_Renderer->GenPngTexture("./Textures/alive3.png");
+	alive[3] = m_Renderer->GenPngTexture("./Textures/alive_many.png");
 
 	//Add Unvisible Wall
 	m_wall[0] = new Object();
@@ -95,6 +101,10 @@ ScnMgr::ScnMgr()
 	m_button[1]->SetPos(180, m_button[0]->m_pos.y - 87 / 1.5 - 5);
 	m_button[1]->SetVol(342/ 1.5, 87/ 1.5);
 
+	m_alive = new Object();
+	m_alive->SetPos(300, 200);
+	m_alive->SetVol(234/ 2, 106/ 2);
+
 
 	for (auto& b : m_commonBullet) {
 		b = new Object();
@@ -136,6 +146,9 @@ void ScnMgr::RenderScene()
 	{
 	case state_title:
 		//버튼 Layer - 2
+		
+		m_Renderer->DrawTextureRect(m_alive->m_pos.x, m_alive->m_pos.y, 2, m_alive->m_vol.x, -m_alive->m_vol.y, 0, 1, 1, 1, 1,alive[alive_count]); //On
+
 		for (int i = 0; i < 2; ++i) {
 			//좌표처리만 해결하면 돌아감
 			if ((m_button[i]->m_pos.x - (m_button[i]->m_vol.x / 2) < (m_mousepos.x)) && ((m_mousepos.x) < m_button[i]->m_pos.x + (m_button[i]->m_vol.x / 2)) &&
@@ -166,10 +179,12 @@ void ScnMgr::RenderScene()
 
 
 	case state_play:
+
 	case state_end:
 		
 		//UI
-		
+		m_Renderer->DrawTextureRect(m_alive->m_pos.x, m_alive->m_pos.y, 2, m_alive->m_vol.x, -m_alive->m_vol.y, 0, 1, 1, 1, 1, alive[alive_count]); //On
+
 		//Draw Background
 		m_Renderer->DrawTextureRect(0, 0, 0, 800, 600, 0, 1, 1, 1, 1, textures[0]);
 
