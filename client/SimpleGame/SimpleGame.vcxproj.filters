@@ -42,10 +42,10 @@
     <ClInclude Include="LoadPng.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="NWManager.h">
+    <ClInclude Include="Vector2d.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Vector2d.h">
+    <ClInclude Include="..\..\server\server\PacketMgr.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
@@ -68,7 +68,7 @@
     <ClCompile Include="LoadPng.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="NWManager.cpp">
+    <ClCompile Include="..\..\server\server\PacketMgr.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,5 +1,8 @@
 client/.vs
 client/simplegame/x64
+server/.vs
+NW_Project/.vs
+server/x64
 *.exe
 *.ilk
 *.pdb
