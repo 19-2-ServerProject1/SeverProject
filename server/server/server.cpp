@@ -481,6 +481,7 @@ void Update(float fTimeElapsed)
 		player.Update(fTimeElapsed);
 	}
 
+	//ÃÑ¾ËºÐ¼ö
 	ShootBullet(fTimeElapsed);
 	for (auto& b : m_commonBullet)
 		b.Update(fTimeElapsed);
