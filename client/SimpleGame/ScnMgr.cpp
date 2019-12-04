@@ -147,7 +147,7 @@ void ScnMgr::RenderScene()
 	case state_title:
 		//버튼 Layer - 2
 		
-		m_Renderer->DrawTextureRect(m_alive->m_pos.x, m_alive->m_pos.y, 2, m_alive->m_vol.x, -m_alive->m_vol.y, 0, 1, 1, 1, 1,alive[alive_count]); //On
+		//m_Renderer->DrawTextureRect(m_alive->m_pos.x, m_alive->m_pos.y, 2, m_alive->m_vol.x, -m_alive->m_vol.y, 0, 1, 1, 1, 1,alive[alive_count]); //On
 
 		for (int i = 0; i < 2; ++i) {
 			//좌표처리만 해결하면 돌아감

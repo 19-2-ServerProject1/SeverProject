@@ -29,7 +29,7 @@ public:
 	
 	
 	Object* m_alive;
-	int alive_count = 0; //0 - 1 alive / 1 - 2 alive / 2 - 3 alive/ 3 - 생존자 수가 3명 이상일때
+	int alive_count = 2; //0 - 1 alive / 1 - 2 alive / 2 - 3 alive/ 3 - 생존자 수가 3명 이상일때
 
 	//map<int, Object> m_block;
 	map<int, Item> m_item;
