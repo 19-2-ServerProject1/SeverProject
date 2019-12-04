@@ -27,6 +27,10 @@ public:
 	Object* m_block[8];
 	Object* m_button[4];
 	
+	
+	Object* m_alive;
+	int alive_count = 0; //0 - 1 alive / 1 - 2 alive / 2 - 3 alive/ 3 - 생존자 수가 3명 이상일때
+
 	//map<int, Object> m_block;
 	map<int, Item> m_item;
 	map<int, Player> m_players;
@@ -40,7 +44,7 @@ public:
 	int hpbar;
 	int state_texture[4];
 	int item_texture[3];
-
+	int alive[4];
 	//Button
 	int button[4][2];
 	//0 - Start Button / 1 - Exit Button
