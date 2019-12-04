@@ -170,7 +170,6 @@ void ScnMgr::RenderScene()
 		
 		//UI
 		
-
 		//Draw Background
 		m_Renderer->DrawTextureRect(0, 0, 0, 800, 600, 0, 1, 1, 1, 1, textures[0]);
 
@@ -209,6 +208,7 @@ void ScnMgr::RenderScene()
 
 			//Draw Character
 			m_Renderer->DrawTextureRect(o.m_pos.x * 100, o.m_pos.y * 100, 0, o.m_vol.x * 100, -o.m_vol.y * 100, 0, o.m_color[0], o.m_color[1], o.m_color[2], o.m_color[3], textures[1]);
+		
 		}
 
 		//Draw End Title
