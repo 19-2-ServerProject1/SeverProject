@@ -662,11 +662,7 @@ int main()
 	SOCKET listen_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (listen_socket == INVALID_SOCKET) err_quit("socket()");
 
-	//네이글 OFF, CLOSE 시 데이터 모두 전송 설정
-	LINGER opt;
-	opt.l_onoff = 1;
-	opt.l_linger = 10;
-	setsockopt(listen_socket, SOL_SOCKET, SO_LINGER, (const char*)&opt, sizeof(opt));
+	//네이글 OFF
 	int opt_val = TRUE;
 	setsockopt(listen_socket, IPPROTO_TCP, TCP_NODELAY, (const char*)&opt_val, sizeof(opt_val));
 
@@ -721,7 +717,7 @@ int main()
 			PlayerList[id] = Player();
 			PlayerList[id].match_round = match_round;
 			PlayerList[id].m_id = id;
-			PlayerList[id].m_socket = client_sock;
+			PlayerList[id].m_socket = static_cast<int>(client_sock);
 			PlayerList[id].m_isConnect = true;
 			PlayerList[id].SetPos(0.0f, 0.0f);
 			PlayerList[id].SetColor(1.0f, 1.0f, 1.0f, 1.0f);

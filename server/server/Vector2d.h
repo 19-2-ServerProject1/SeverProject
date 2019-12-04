@@ -21,7 +21,7 @@ public:
 	Vector2d& operator*=(const float& value) { this->x *= value; this->y *= value; return *this; };
 	Vector2d& operator/=(const float& value) { this->x /= value; this->y /= value; return *this; };
 	Vector2d& rotate(float degree) {
-		float rad = degree * M_PI / 180.0f;
+		float rad = degree * (float)M_PI / 180.0f;
 		float x = this->x;
 		float y = this->y;
 		this->x = cos(rad)*x - sin(rad)*y;
