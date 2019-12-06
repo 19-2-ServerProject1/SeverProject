@@ -25,7 +25,7 @@ using namespace std;
 #define COMMON_BULLET_DAMAGE 1
 
 int g_curUser;
-int MAX_PLAYER;
+int MAX_PLAYER = 3;
 queue<int> idQueue;
 mutex idlock;
 int match_round;
@@ -654,7 +654,6 @@ int main()
 {
 	float refreshrate = 0;
 	ifstream in("option.txt");
-	in >> MAX_PLAYER;
 	in >> refreshrate;
 	in.close();
 	refreshtime = 1.0f / refreshrate;
