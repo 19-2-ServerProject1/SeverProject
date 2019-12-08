@@ -1,5 +1,6 @@
 #pragma once
 #include "Vector2d.h"
+#include "Config.h"
 
 class Object
 {
@@ -90,7 +91,7 @@ public:
 	int match_round = -1;
 	int m_hp = 100;
 	int weapon = 0;
-	Bullet bullets[100];
+	Bullet bullets[MAX_BULLET];
 
 	int m_damage[3] = { 30, 20, 50 };
 
