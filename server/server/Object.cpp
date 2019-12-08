@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include "Object.h"
-#include "Config.h"
 #include <iostream>
 #include <math.h>
 

@@ -3,8 +3,7 @@
 #define WINDOW_WIDTH  800
 #define WINDOW_HEIGHT 600
 
-#define MAX_OBJECTS 100
-#define MAX_BULLET 30
+#define MAX_BULLET 100
 #define MAX_ITEM 4
 
 #define HERO_ID 0
